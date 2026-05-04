@@ -1,39 +1,32 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-// Mock supabase client
+// Deep chainable mock
+const chainable = (resolveValue: any = null): any => {
+  const fn: any = () => chainable(resolveValue);
+  fn.select = () => chainable(resolveValue);
+  fn.eq = () => chainable(resolveValue);
+  fn.neq = () => chainable(resolveValue);
+  fn.in = () => chainable(resolveValue);
+  fn.or = () => chainable(resolveValue);
+  fn.order = () => chainable(resolveValue);
+  fn.limit = () => Promise.resolve({ data: [], count: 0 });
+  fn.maybeSingle = () => Promise.resolve({ data: null, count: 0 });
+  fn.single = () => Promise.resolve({ data: null, count: 0 });
+  fn.insert = () => Promise.resolve({ data: null });
+  fn.update = () => chainable(resolveValue);
+  fn.delete = () => chainable(resolveValue);
+  fn.then = (cb: any) => Promise.resolve({ data: [], count: 0 }).then(cb);
+  return fn;
+};
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: () => ({
-            limit: () => Promise.resolve({ data: [] }),
-          }),
-          maybeSingle: () => Promise.resolve({ data: null }),
-          single: () => Promise.resolve({ data: null }),
-        }),
-        in: () => Promise.resolve({ data: [] }),
-        or: () => ({
-          order: () => Promise.resolve({ data: [] }),
-        }),
-      }),
-      insert: () => Promise.resolve({ data: null }),
-      update: () => ({
-        eq: () => ({
-          eq: () => ({
-            eq: () => Promise.resolve({ data: null }),
-          }),
-        }),
-      }),
-    }),
+    from: () => chainable(),
     rpc: () => Promise.resolve({ data: null }),
     channel: () => ({
-      on: () => ({
-        on: () => ({ subscribe: () => ({}) }),
-        subscribe: () => ({}),
-      }),
+      on: function () { return this; },
       subscribe: () => ({}),
     }),
     removeChannel: () => {},
@@ -50,7 +43,6 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Mock auth context
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
     user: { id: "test-user-id", email: "test@test.com" },
@@ -63,43 +55,27 @@ import Rooms from "@/pages/Rooms";
 import Profile from "@/pages/Profile";
 
 describe("Rooms Page", () => {
-  it("renders the public chat header", async () => {
-    render(
-      <MemoryRouter>
-        <Rooms />
-      </MemoryRouter>
-    );
+  it("renders the public chat header", () => {
+    render(<MemoryRouter><Rooms /></MemoryRouter>);
     expect(screen.getByText("الدردشة العامة")).toBeInTheDocument();
   });
 
   it("renders messages container with WhatsApp scroll class", () => {
-    render(
-      <MemoryRouter>
-        <Rooms />
-      </MemoryRouter>
-    );
+    render(<MemoryRouter><Rooms /></MemoryRouter>);
     const container = screen.getByTestId("messages-container");
     expect(container).toBeInTheDocument();
     expect(container.className).toContain("chat-scroll-whatsapp");
   });
 
   it("renders test messages button", () => {
-    render(
-      <MemoryRouter>
-        <Rooms />
-      </MemoryRouter>
-    );
+    render(<MemoryRouter><Rooms /></MemoryRouter>);
     expect(screen.getByText(/إضافة 20 رسالة تجريبية/)).toBeInTheDocument();
   });
 });
 
 describe("Profile Page", () => {
   it("renders the profile page", () => {
-    render(
-      <MemoryRouter>
-        <Profile />
-      </MemoryRouter>
-    );
+    render(<MemoryRouter><Profile /></MemoryRouter>);
     expect(screen.getByText(/الملف الشخصي|تعديل/)).toBeInTheDocument();
   });
 });
