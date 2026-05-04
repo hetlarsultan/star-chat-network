@@ -111,12 +111,18 @@ const PrivateChat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [userId, user]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    if (scrollRef.current) {
+    if (!scrollRef.current) return;
+    if (!initialScrollDone.current && messages.length > 0) {
+      initialScrollDone.current = true;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      return;
+    }
+    if (isNearBottomRef.current) {
       requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-        }
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       });
     }
   }, [messages]);

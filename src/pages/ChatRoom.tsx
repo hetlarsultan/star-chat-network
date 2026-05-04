@@ -91,9 +91,19 @@ const ChatRoom = () => {
     return () => { supabase.removeChannel(channel); };
   }, [roomId, fetchProfile]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    if (isNearBottomRef.current && scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (!scrollRef.current) return;
+    if (!initialScrollDone.current && messages.length > 0) {
+      initialScrollDone.current = true;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      return;
+    }
+    if (isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      });
     }
   }, [messages]);
 
