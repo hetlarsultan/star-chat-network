@@ -130,8 +130,10 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll pb-36">
-        <WelcomeBanner />
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" data-testid="messages-container">
+        <div className="flex-shrink-0">
+          <WelcomeBanner />
+        </div>
         <div className="mt-2">
           {messages.map(msg => (
             <ChatMessage
