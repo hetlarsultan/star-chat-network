@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowRight, Send, Image, X, Eye, ArrowDown } from "lucide-react";
+import { ArrowRight, Send, Image, X, Eye, ArrowDown, ArrowUp } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,11 +41,14 @@ const PrivateChat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isNearBottomRef = useRef(true);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showScrollUp, setShowScrollUp] = useState(false);
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    }
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -54,6 +57,7 @@ const PrivateChat = () => {
     const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
     isNearBottomRef.current = nearBottom;
     setShowScrollDown(!nearBottom);
+    setShowScrollUp(scrollTop > 300);
   }, []);
 
   useEffect(() => {
@@ -111,12 +115,18 @@ const PrivateChat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [userId, user]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
-    if (scrollRef.current) {
+    if (!scrollRef.current) return;
+    if (!initialScrollDone.current && messages.length > 0) {
+      initialScrollDone.current = true;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      return;
+    }
+    if (isNearBottomRef.current) {
       requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-        }
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       });
     }
   }, [messages]);
@@ -266,6 +276,15 @@ const PrivateChat = () => {
           </div>
         ))}
       </div>
+
+      {showScrollUp && (
+        <button
+          onClick={scrollToTop}
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
 
       {showScrollDown && (
         <button
