@@ -76,6 +76,6 @@ describe("Rooms Page", () => {
 describe("Profile Page", () => {
   it("renders the profile page", () => {
     render(<MemoryRouter><Profile /></MemoryRouter>);
-    expect(screen.getByText(/الملف الشخصي|تعديل/)).toBeInTheDocument();
+    expect(screen.getByText("تحرير البيانات")).toBeInTheDocument();
   });
 });
