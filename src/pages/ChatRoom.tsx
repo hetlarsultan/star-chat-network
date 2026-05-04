@@ -177,6 +177,15 @@ const ChatRoom = () => {
         </div>
       </div>
 
+      {showScrollUp && (
+        <button
+          onClick={scrollToTop}
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
+
       {showScrollDown && (
         <button
           onClick={scrollToBottom}
