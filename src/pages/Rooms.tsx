@@ -33,14 +33,17 @@ const Rooms = () => {
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
   const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showScrollUp, setShowScrollUp] = useState(false);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    }
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -49,6 +52,7 @@ const Rooms = () => {
     const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
     isNearBottomRef.current = nearBottom;
     setShowScrollDown(!nearBottom);
+    setShowScrollUp(scrollTop > 300);
   }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
