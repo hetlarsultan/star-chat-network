@@ -156,15 +156,17 @@ const Rooms = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName="الدردشة العامة" />
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll pb-36">
-        <WelcomeBanner />
-        <div className="flex justify-center py-2">
-          <button
-            onClick={addTestMessages}
-            className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full"
-          >
-            🧪 إضافة 20 رسالة تجريبية
-          </button>
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" data-testid="messages-container">
+        <div className="flex-shrink-0">
+          <WelcomeBanner />
+          <div className="flex justify-center py-2">
+            <button
+              onClick={addTestMessages}
+              className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full"
+            >
+              🧪 إضافة 20 رسالة تجريبية
+            </button>
+          </div>
         </div>
         <div className="mt-2">
           {messages.map(msg => (
