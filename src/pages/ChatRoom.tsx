@@ -6,10 +6,14 @@ import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
+import NewMessagesIndicator from "@/components/NewMessagesIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 interface MessageWithProfile {
   id: string;
@@ -31,28 +35,38 @@ const ChatRoom = () => {
   const [roomName, setRoomName] = useState("الغرفة العامة");
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
   const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
-  const [showScrollDown, setShowScrollDown] = useState(false);
-  const [showScrollUp, setShowScrollUp] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
 
-  const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, []);
+  const loadOlderMessages = useCallback(async () => {
+    if (!roomId || messages.length === 0) return;
+    const oldest = messages[0];
+    const { data } = await supabase
+      .from("messages").select("*").eq("room_id", roomId)
+      .lt("created_at", oldest.created_at)
+      .order("created_at", { ascending: false }).limit(PAGE_SIZE);
+    if (!data || data.length === 0) { setHasMore(false); return; }
+    if (data.length < PAGE_SIZE) setHasMore(false);
+    const sorted = data.reverse();
+    const userIds = [...new Set(sorted.map(m => m.user_id))];
+    const missing = userIds.filter(id => !profilesCacheRef.current[id]);
+    if (missing.length) {
+      const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", missing);
+      profiles?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
+    }
+    const withProfiles = sorted.map(m => ({ ...m, profile: profilesCacheRef.current[m.user_id] || null }));
+    setMessages(prev => [...withProfiles, ...prev]);
+  }, [roomId, messages]);
 
-  const scrollToTop = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    isNearBottomRef.current = nearBottom;
-    setShowScrollDown(!nearBottom);
-    setShowScrollUp(scrollTop > 300);
-  }, []);
+  const {
+    scrollRef, handleScroll, scrollToBottom, scrollToTop,
+    showScrollDown, showScrollUp, showNewMessages, dismissNewMessages, isLoadingMore,
+  } = useChatScroll({
+    conversationId: `room_${roomId}`,
+    messageCount: messages.length,
+    onLoadMore: loadOlderMessages,
+    hasMore,
+  });
 
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
     if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
@@ -67,18 +81,24 @@ const ChatRoom = () => {
       if (data) setRoomName(data.name);
     });
 
+    const cached = getCachedMessages<MessageWithProfile>(`room_${roomId}`);
+    if (cached.length > 0) setMessages(cached);
+
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("messages").select("*").eq("room_id", roomId)
-        .order("created_at", { ascending: true }).limit(100);
+        .order("created_at", { ascending: false }).limit(PAGE_SIZE);
       if (!data) return;
-
-      const userIds = [...new Set(data.map(m => m.user_id))];
+      const sorted = data.reverse();
+      const userIds = [...new Set(sorted.map(m => m.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-      setMessages(data.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
+      const withProfiles = sorted.map(m => ({ ...m, profile: profileMap[m.user_id] || null }));
+      setMessages(withProfiles);
+      cacheMessages(`room_${roomId}`, withProfiles);
+      setHasMore(data.length >= PAGE_SIZE);
     };
     fetchMessages();
 
@@ -88,28 +108,16 @@ const ChatRoom = () => {
         async (payload) => {
           const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
-          setMessages(prev => [...prev, { ...msg, profile }]);
+          setMessages(prev => {
+            const updated = [...prev, { ...msg, profile }];
+            cacheMessages(`room_${roomId}`, updated);
+            return updated;
+          });
         }
       ).subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [roomId, fetchProfile]);
-
-  const initialScrollDone = useRef(false);
-
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    if (!initialScrollDone.current && messages.length > 0) {
-      initialScrollDone.current = true;
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      return;
-    }
-    if (isNearBottomRef.current) {
-      requestAnimationFrame(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      });
-    }
-  }, [messages]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
     if (!user || !roomId) return;
@@ -124,10 +132,7 @@ const ChatRoom = () => {
   const handleVoiceSend = async (voiceUrl: string) => {
     if (!user || !roomId) return;
     await supabase.from("messages").insert({
-      room_id: roomId,
-      user_id: user.id,
-      text: "🎤 رسالة صوتية",
-      voice_url: voiceUrl,
+      room_id: roomId, user_id: user.id, text: "🎤 رسالة صوتية", voice_url: voiceUrl,
     } as any);
   };
 
@@ -145,6 +150,11 @@ const ChatRoom = () => {
       <TopToolbar roomName={roomName} />
 
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" data-testid="messages-container">
+        {isLoadingMore && (
+          <div className="flex justify-center py-3">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
         <div className="flex-shrink-0">
           <WelcomeBanner />
         </div>
@@ -178,33 +188,22 @@ const ChatRoom = () => {
       </div>
 
       {showScrollUp && (
-        <button
-          onClick={scrollToTop}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg"
-        >
+        <button onClick={scrollToTop} className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg">
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
 
-      {showScrollDown && (
-        <button
-          onClick={scrollToBottom}
-          className="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce"
-        >
+      {showNewMessages && <NewMessagesIndicator onClick={() => { scrollToBottom(); dismissNewMessages(); }} />}
+
+      {showScrollDown && !showNewMessages && (
+        <button onClick={scrollToBottom} className="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce">
           <ArrowDown className="w-5 h-5" />
         </button>
       )}
 
-      <ChatInput
-        onSend={handleSend}
-        replyTo={replyTo}
-        onCancelReply={() => setReplyTo(null)}
-      />
+      <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
       <BottomNav />
-
-      {selectedUser && (
-        <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />
-      )}
+      {selectedUser && <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />}
     </div>
   );
 };
