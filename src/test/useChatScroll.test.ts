@@ -69,74 +69,58 @@ describe("useChatScroll – Load older messages preserves scroll position", () =
 describe("useChatScroll – New messages indicator behavior", () => {
   beforeEach(() => localStorageMock.clear());
 
-  it("shows new messages indicator when user is scrolled up and new message arrives", async () => {
-    const mockDiv = createMockScrollDiv({ scrollTop: 200, scrollHeight: 2000 });
+  function setupWithMessages(convId: string, initialCount: number) {
+    const mockDiv = createMockScrollDiv({ scrollHeight: 2000 });
 
     const { result, rerender } = renderHook(
-      ({ messageCount }) =>
-        useChatScroll({ conversationId: "ind-test-1", messageCount, onLoadMore: undefined, hasMore: false }),
-      { initialProps: { messageCount: 10 } }
+      ({ mc }) => useChatScroll({ conversationId: convId, messageCount: mc, onLoadMore: undefined, hasMore: false }),
+      { initialProps: { mc: 0 } }
     );
 
-    // Attach ref and rerender so useEffect sees it and sets initialScrollDone
+    // Attach ref before triggering the initial scroll useEffect
     (result.current.scrollRef as any).current = mockDiv;
-    rerender({ messageCount: 10 });
 
-    // Now simulate user NOT near bottom
-    // nearBottom = scrollHeight(2000) - scrollTop - clientHeight(600) < 100
-    // We need NOT near bottom: 2000 - scrollTop - 600 > 100 => scrollTop < 1300
+    // Change messageCount to trigger useEffect (initial scroll branch)
+    rerender({ mc: initialCount });
+
+    return { result, rerender, mockDiv };
+  }
+
+  it("shows new messages indicator when user is scrolled up and new message arrives", () => {
+    const { result, rerender, mockDiv } = setupWithMessages("ind-1", 10);
+
+    // User scrolls up (not near bottom: 2000-200-600=1200>100)
     mockDiv.scrollTop = 200;
     act(() => { result.current.handleScroll(); });
-
-    // Verify not near bottom
     expect(result.current.showScrollDown).toBe(true);
 
     // New message arrives
-    rerender({ messageCount: 11 });
-
+    rerender({ mc: 11 });
     expect(result.current.showNewMessages).toBe(true);
   });
 
   it("hides new messages indicator when user scrolls back to bottom", () => {
-    const mockDiv = createMockScrollDiv({ scrollTop: 200, scrollHeight: 2000 });
-
-    const { result, rerender } = renderHook(
-      ({ messageCount }) =>
-        useChatScroll({ conversationId: "ind-test-2", messageCount, onLoadMore: undefined, hasMore: false }),
-      { initialProps: { messageCount: 10 } }
-    );
-
-    (result.current.scrollRef as any).current = mockDiv;
-    rerender({ messageCount: 10 });
+    const { result, rerender, mockDiv } = setupWithMessages("ind-2", 10);
 
     mockDiv.scrollTop = 200;
     act(() => { result.current.handleScroll(); });
 
-    rerender({ messageCount: 11 });
+    rerender({ mc: 11 });
     expect(result.current.showNewMessages).toBe(true);
 
-    // Scroll to bottom
-    mockDiv.scrollTop = 1450;
+    // Scroll to bottom (2000-1500-600=-100<100)
+    mockDiv.scrollTop = 1500;
     act(() => { result.current.handleScroll(); });
     expect(result.current.showNewMessages).toBe(false);
   });
 
   it("dismissNewMessages hides indicator manually", () => {
-    const mockDiv = createMockScrollDiv({ scrollTop: 100, scrollHeight: 2000 });
-
-    const { result, rerender } = renderHook(
-      ({ messageCount }) =>
-        useChatScroll({ conversationId: "ind-test-3", messageCount, onLoadMore: undefined, hasMore: false }),
-      { initialProps: { messageCount: 5 } }
-    );
-
-    (result.current.scrollRef as any).current = mockDiv;
-    rerender({ messageCount: 5 });
+    const { result, rerender, mockDiv } = setupWithMessages("ind-3", 5);
 
     mockDiv.scrollTop = 100;
     act(() => { result.current.handleScroll(); });
 
-    rerender({ messageCount: 6 });
+    rerender({ mc: 6 });
     expect(result.current.showNewMessages).toBe(true);
 
     act(() => { result.current.dismissNewMessages(); });
