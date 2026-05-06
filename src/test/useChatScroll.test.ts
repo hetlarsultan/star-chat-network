@@ -53,14 +53,12 @@ describe("useChatScroll – Load older messages preserves scroll position", () =
     expect(onLoadMore).toHaveBeenCalled();
 
     // Simulate older messages loaded: scrollHeight increases, messageCount increases
-    mockDiv.scrollHeight = 4500; // grew by 1500
+    Object.defineProperty(mockDiv, "scrollHeight", { value: 4500, writable: true });
     rerender({ messageCount: 80 });
 
     // The hook should adjust scrollTop to compensate for new content above
-    // Since the hook uses prevScrollHeight logic, scrollTop should increase
     // This verifies no "jump to top" behavior
-    // The key assertion: scrollTo was NOT called with top:0 after prepend
-    const scrollToCalls = mockDiv.scrollTo.mock.calls;
+    const scrollToCalls = (mockDiv.scrollTo as any).mock.calls;
     const jumpedToZero = scrollToCalls.some((c: any) => c[0]?.top === 0);
     expect(jumpedToZero).toBe(false);
   });
