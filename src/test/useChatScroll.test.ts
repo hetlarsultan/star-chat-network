@@ -15,16 +15,18 @@ const localStorageMock = (() => {
 Object.defineProperty(window, "localStorage", { value: localStorageMock });
 
 // Helper to create a fake scrollable div with controllable properties
-function createMockScrollDiv(overrides: Partial<HTMLDivElement> = {}) {
-  return {
+function createMockScrollDiv(overrides: Partial<Record<string, any>> = {}) {
+  const div: any = {
     scrollTop: 0,
-    scrollHeight: 2000,
     clientHeight: 600,
     scrollTo: vi.fn(function (this: any, opts: any) {
       if (opts && typeof opts.top === "number") this.scrollTop = opts.top;
     }),
     ...overrides,
-  } as unknown as HTMLDivElement;
+  };
+  // Make scrollHeight configurable
+  Object.defineProperty(div, "scrollHeight", { value: overrides.scrollHeight || 2000, writable: true, configurable: true });
+  return div as unknown as HTMLDivElement;
 }
 
 describe("useChatScroll – Load older messages preserves scroll position", () => {
