@@ -122,13 +122,17 @@
   .chat-scroll-whatsapp {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    touch-action: pan-y pan-x pinch-zoom;
     will-change: scroll-position;
     -ms-scroll-chaining: none;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     scroll-behavior: smooth;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .chat-scroll-whatsapp::-webkit-scrollbar {
+    display: none;
   }
 }
 

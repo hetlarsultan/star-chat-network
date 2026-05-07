@@ -215,7 +215,8 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp px-4 py-4 pb-20" data-testid="messages-container">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp px-4 py-4 pb-20" style={{ touchAction: "pan-y" }} data-testid="messages-container">
+        <div className="flex-grow" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
