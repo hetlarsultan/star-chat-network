@@ -111,8 +111,8 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
           )}
         </div>
 
-        <button onClick={onAvatarClick} className="flex flex-col items-center gap-0.5">
-          <div className={`w-9 h-9 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center overflow-hidden`}>
+        <button onClick={onAvatarClick} className="flex flex-col items-center gap-0.5 active:scale-95 transition-transform">
+          <div className={`w-10 h-10 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-shadow`}>
             {message.avatarUrl ? (
               <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
