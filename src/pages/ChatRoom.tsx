@@ -137,7 +137,7 @@ const ChatRoom = () => {
   };
 
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
-    if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
+    if (profile) setSelectedUser(profile);
   };
 
   const handleReply = (msg: MessageWithProfile) => {
