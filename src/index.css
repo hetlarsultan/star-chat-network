@@ -118,7 +118,7 @@
   .chat-scroll-whatsapp {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    touch-action: pan-y pan-x pinch-zoom;
+    touch-action: auto;
     will-change: scroll-position;
     -ms-scroll-chaining: none;
     display: flex;
