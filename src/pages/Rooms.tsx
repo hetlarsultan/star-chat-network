@@ -128,7 +128,7 @@ const Rooms = () => {
       const profile = await fetchProfile(user.id);
       setMessages(prev => {
         if (prev.some(m => m.id === (data as any).id)) return prev;
-        const updated = [...prev, { ...(data as any), profile }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const updated = appendSorted(prev, { ...(data as any), profile });
         cacheMessages(`room_${PUBLIC_ROOM_ID}`, updated);
         return updated;
       });
