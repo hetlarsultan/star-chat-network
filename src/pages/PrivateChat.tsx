@@ -8,6 +8,7 @@ import VoiceRecorder from "@/components/VoiceRecorder";
 import VoicePlayer from "@/components/VoicePlayer";
 import NewMessagesIndicator from "@/components/NewMessagesIndicator";
 import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { appendSorted } from "@/lib/sortMessages";
 
 const PAGE_SIZE = 50;
 
@@ -107,7 +108,7 @@ const PrivateChat = () => {
             ) {
               setMessages(prev => {
                 if (prev.some(m => m.id === msg.id)) return prev;
-                const updated = [...prev, msg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                const updated = appendSorted(prev, msg);
                 cacheMessages(`pm_${userId}`, updated);
                 return updated;
               });
@@ -136,7 +137,7 @@ const PrivateChat = () => {
     if (data) {
       setMessages(prev => {
         if (prev.some(m => m.id === (data as any).id)) return prev;
-        const updated = [...prev, data as PrivateMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const updated = appendSorted(prev, data as PrivateMsg);
         cacheMessages(`pm_${userId}`, updated);
         return updated;
       });

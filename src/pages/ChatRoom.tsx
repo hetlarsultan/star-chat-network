@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { appendSorted } from "@/lib/sortMessages";
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
 
 const PAGE_SIZE = 50;
@@ -110,7 +111,7 @@ const ChatRoom = () => {
           const profile = await fetchProfile(msg.user_id);
           setMessages(prev => {
             if (prev.some(m => m.id === msg.id)) return prev;
-            const updated = [...prev, { ...msg, profile }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            const updated = appendSorted(prev, { ...msg, profile });
             cacheMessages(`room_${roomId}`, updated);
             return updated;
           });
@@ -132,7 +133,7 @@ const ChatRoom = () => {
       const profile = await fetchProfile(user.id);
       setMessages(prev => {
         if (prev.some(m => m.id === (data as any).id)) return prev;
-        const updated = [...prev, { ...(data as any), profile }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const updated = appendSorted(prev, { ...(data as any), profile });
         cacheMessages(`room_${roomId}`, updated);
         return updated;
       });
