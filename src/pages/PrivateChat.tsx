@@ -130,8 +130,17 @@ const PrivateChat = () => {
 
   const handleSend = async () => {
     if (!text.trim() || !user || !userId) return;
-    await supabase.from("private_messages").insert({ sender_id: user.id, receiver_id: userId, text: text.trim() });
+    const body = text.trim();
     setText("");
+    const { data } = await supabase.from("private_messages").insert({ sender_id: user.id, receiver_id: userId, text: body }).select().single();
+    if (data) {
+      setMessages(prev => {
+        if (prev.some(m => m.id === (data as any).id)) return prev;
+        const updated = [...prev, data as PrivateMsg];
+        cacheMessages(`pm_${userId}`, updated);
+        return updated;
+      });
+    }
   };
 
   const handleVoiceSend = async (blob: Blob, duration: number) => {
