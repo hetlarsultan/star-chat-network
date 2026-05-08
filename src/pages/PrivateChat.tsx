@@ -137,7 +137,7 @@ const PrivateChat = () => {
     if (data) {
       setMessages(prev => {
         if (prev.some(m => m.id === (data as any).id)) return prev;
-        const updated = [...prev, data as PrivateMsg].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const updated = appendSorted(prev, data as PrivateMsg);
         cacheMessages(`pm_${userId}`, updated);
         return updated;
       });
