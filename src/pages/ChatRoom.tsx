@@ -111,7 +111,7 @@ const ChatRoom = () => {
           const profile = await fetchProfile(msg.user_id);
           setMessages(prev => {
             if (prev.some(m => m.id === msg.id)) return prev;
-            const updated = [...prev, { ...msg, profile }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            const updated = appendSorted(prev, { ...msg, profile });
             cacheMessages(`room_${roomId}`, updated);
             return updated;
           });
