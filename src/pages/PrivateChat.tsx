@@ -106,6 +106,7 @@ const PrivateChat = () => {
               (msg.sender_id === userId && msg.receiver_id === user.id)
             ) {
               setMessages(prev => {
+                if (prev.some(m => m.id === msg.id)) return prev;
                 const updated = [...prev, msg];
                 cacheMessages(`pm_${userId}`, updated);
                 return updated;
