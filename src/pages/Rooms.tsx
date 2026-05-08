@@ -104,6 +104,7 @@ const Rooms = () => {
           const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
           setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev;
             const updated = [...prev, { ...msg, profile }];
             cacheMessages(`room_${PUBLIC_ROOM_ID}`, updated);
             return updated;
