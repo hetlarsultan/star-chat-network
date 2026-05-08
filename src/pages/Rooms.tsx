@@ -122,7 +122,16 @@ const Rooms = () => {
       insertData.reply_to_username = reply.username;
       insertData.reply_to_text = reply.text;
     }
-    await supabase.from("messages").insert(insertData);
+    const { data } = await supabase.from("messages").insert(insertData).select().single();
+    if (data) {
+      const profile = await fetchProfile(user.id);
+      setMessages(prev => {
+        if (prev.some(m => m.id === (data as any).id)) return prev;
+        const updated = [...prev, { ...(data as any), profile }];
+        cacheMessages(`room_${PUBLIC_ROOM_ID}`, updated);
+        return updated;
+      });
+    }
   };
 
   const addTestMessages = () => {
