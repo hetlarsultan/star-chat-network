@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { appendSorted } from "@/lib/sortMessages";
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
 
 const PAGE_SIZE = 50;
