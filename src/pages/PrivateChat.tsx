@@ -8,6 +8,7 @@ import VoiceRecorder from "@/components/VoiceRecorder";
 import VoicePlayer from "@/components/VoicePlayer";
 import NewMessagesIndicator from "@/components/NewMessagesIndicator";
 import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { appendSorted } from "@/lib/sortMessages";
 
 const PAGE_SIZE = 50;
 
