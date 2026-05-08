@@ -109,6 +109,7 @@ const ChatRoom = () => {
           const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
           setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev;
             const updated = [...prev, { ...msg, profile }];
             cacheMessages(`room_${roomId}`, updated);
             return updated;
@@ -126,7 +127,16 @@ const ChatRoom = () => {
       insertData.reply_to_username = reply.username;
       insertData.reply_to_text = reply.text;
     }
-    await supabase.from("messages").insert(insertData);
+    const { data } = await supabase.from("messages").insert(insertData).select().single();
+    if (data) {
+      const profile = await fetchProfile(user.id);
+      setMessages(prev => {
+        if (prev.some(m => m.id === (data as any).id)) return prev;
+        const updated = [...prev, { ...(data as any), profile }];
+        cacheMessages(`room_${roomId}`, updated);
+        return updated;
+      });
+    }
   };
 
   const handleVoiceSend = async (voiceUrl: string) => {
