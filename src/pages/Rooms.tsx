@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
+import { appendSorted, sortByCreatedAt } from "@/lib/sortMessages";
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
 
 const PUBLIC_ROOM_ID = "c4e3b9ac-aa54-4eb7-b992-d1e22e0fc74a";
