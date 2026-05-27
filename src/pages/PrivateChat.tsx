@@ -209,7 +209,7 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 pb-20">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -260,7 +260,7 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div className="sticky bottom-0 bg-background border-t border-border px-3 py-2 flex items-center gap-2">
+      <div className="border-t border-border px-3 py-2 flex items-center gap-2">
         <button
           onClick={handleSend}
           className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 transition-colors flex-shrink-0"
