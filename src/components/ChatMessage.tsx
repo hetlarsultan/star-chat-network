@@ -39,41 +39,41 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
 
   return (
     <div
-      className={`animate-slide-up border-b border-border/50 px-2.5 py-2 ${
+      className={`animate-slide-up border-b border-border/50 px-4 py-3 ${
         message.isOwn ? "bg-card/60" : "bg-background"
       }`}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         {!message.isOwn && (
-          <div className="flex flex-col gap-0.5 mt-1 opacity-40 hover:opacity-100 transition-opacity">
+          <div className="flex flex-col gap-1 mt-1 opacity-40 hover:opacity-100 transition-opacity">
             <button onClick={onUsernameClick} className="text-muted-foreground hover:text-foreground" title="رد">
-              <Reply className="w-3.5 h-3.5" />
+              <Reply className="w-4 h-4" />
             </button>
             <button className="text-muted-foreground hover:text-foreground">
-              <AlertCircle className="w-3.5 h-3.5" />
+              <AlertCircle className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1">
           {message.replyToUsername && (
-            <div className="bg-muted/50 border-r-2 border-primary rounded px-2 py-1 mb-1.5 text-[11px]">
+            <div className="bg-muted/50 border-r-2 border-primary rounded px-3 py-1.5 mb-2 text-xs">
               <span className="font-bold text-primary">{message.replyToUsername}</span>
               <p className="text-muted-foreground truncate mt-0.5">{message.replyToText}</p>
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <button onClick={onAvatarClick} className="w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-2 mb-1">
+            <button onClick={onAvatarClick} className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
               {message.avatarUrl ? (
                 <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-[10px]">👤</span>
+                <span className="text-xs">👤</span>
               )}
             </button>
             <button
               onClick={onUsernameClick}
-              className="text-xs font-bold hover:underline"
+              className="text-sm font-bold hover:underline"
               style={{
                 color: message.nameColor || (message.isOwn ? "hsl(var(--primary))" : message.gender === "female" ? "hsl(var(--primary))" : "hsl(var(--foreground))"),
                 fontFamily,
@@ -81,16 +81,16 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
             >
               {message.username}
             </button>
-            <span className={`text-[8px] font-cairo font-bold px-1 py-0.5 rounded-full ${
+            <span className={`text-[9px] font-cairo font-bold px-1.5 py-0.5 rounded-full ${
               message.isGuest
                 ? "bg-muted text-muted-foreground"
                 : "bg-accent/20 text-accent"
             }`}>
               {message.isGuest ? "زائر" : "عضو"}
             </span>
-            {message.country && <span className="text-xs">{message.country}</span>}
+            {message.country && <span className="text-sm">{message.country}</span>}
             {message.gender && (
-              <span className="text-[9px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground">
                 {message.gender === "male" ? "♂" : "♀"}
               </span>
             )}
@@ -100,7 +100,7 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
             <VoicePlayer voiceUrl={message.voiceUrl} />
           ) : (
             <p
-              className="text-xs leading-relaxed"
+              className="text-sm leading-relaxed"
               style={{
                 color: message.fontColor || undefined,
                 fontFamily,
@@ -111,22 +111,22 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
           )}
         </div>
 
-        <button onClick={onAvatarClick} className="flex flex-col items-center gap-0.5">
-          <div className={`w-9 h-9 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center overflow-hidden`}>
+        <button onClick={onAvatarClick} className="flex flex-col items-center gap-1">
+          <div className={`w-12 h-12 rounded-full bg-muted border-2 ${message.gender === "female" ? "border-primary" : "border-accent"} flex items-center justify-center overflow-hidden`}>
             {message.avatarUrl ? (
               <img src={message.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm">👤</span>
+              <span className="text-lg">👤</span>
             )}
           </div>
-          <span className="text-[8px] font-space font-bold text-accent bg-accent/20 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-space font-bold text-accent bg-accent/20 px-2 py-0.5 rounded-full">
             {message.level}
           </span>
         </button>
       </div>
 
-      <div className="flex justify-end mt-0.5">
-        <span className={`text-[9px] font-space ${message.isOwn ? "text-foreground" : "text-muted-foreground"}`}>
+      <div className="flex justify-end mt-1">
+        <span className={`text-[10px] font-space ${message.isOwn ? "text-foreground" : "text-muted-foreground"}`}>
           {message.time}
         </span>
       </div>

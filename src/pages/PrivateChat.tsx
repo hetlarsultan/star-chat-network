@@ -193,11 +193,11 @@ const PrivateChat = () => {
             {partner ? formatLastSeen(partner.last_seen, partner.is_online) : ""}
           </span>
         </div>
-        <div className="w-9 h-9 rounded-full bg-muted border-2 border-accent flex items-center justify-center overflow-hidden">
+        <div className="w-12 h-12 rounded-full bg-muted border-2 border-accent flex items-center justify-center overflow-hidden">
           {partner?.avatar_url ? (
             <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm">👤</span>
+            <span className="text-lg">👤</span>
           )}
         </div>
       </div>
@@ -260,12 +260,12 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div className="sticky bottom-0 bg-background border-t border-border px-2 py-1.5 flex items-center gap-1.5">
+      <div className="sticky bottom-0 bg-background border-t border-border px-3 py-2 flex items-center gap-2">
         <button
           onClick={handleSend}
-          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 transition-colors flex-shrink-0"
+          className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 transition-colors flex-shrink-0"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-5 h-5" />
         </button>
         <input
           type="text"
@@ -273,7 +273,7 @@ const PrivateChat = () => {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="اكتب رسالتك..."
-          className="flex-1 bg-muted border border-border rounded-full px-3 py-1.5 text-xs font-cairo text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          className="flex-1 bg-muted border border-border rounded-full px-4 py-2 text-sm font-cairo text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           dir="rtl"
         />
         <EmojiPicker onSelect={(emoji) => setText(prev => prev + emoji)} />
@@ -287,9 +287,9 @@ const PrivateChat = () => {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={sendingImage}
-          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 disabled:opacity-50"
+          className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 disabled:opacity-50"
         >
-          <Image className="w-4 h-4" />
+          <Image className="w-5 h-5" />
         </button>
         <VoiceRecorder onSend={handleVoiceSend} />
       </div>
