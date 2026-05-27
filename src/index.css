@@ -59,15 +59,12 @@
   * {
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
   }
 
   html {
     direction: rtl;
     height: 100%;
     overflow: hidden;
-    touch-action: pan-y;
-    overscroll-behavior: none;
   }
 
   body {
@@ -76,14 +73,12 @@
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   #root {
     height: 100%;
     overflow: hidden;
-    touch-action: pan-y;
   }
 }
 
