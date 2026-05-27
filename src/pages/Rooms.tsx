@@ -152,7 +152,7 @@ const Rooms = () => {
   };
 
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
-    if (profile) setSelectedUser(profile);
+    if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
   };
 
   const handleReply = (msg: MessageWithProfile) => {
