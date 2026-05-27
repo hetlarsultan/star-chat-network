@@ -107,11 +107,6 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  .chat-scroll {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    scroll-behavior: smooth;
-  }
 }
 
 /* Breathing animation for typing indicator */

@@ -113,11 +113,7 @@ const PrivateChat = () => {
 
   useEffect(() => {
     if (scrollRef.current) {
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-        }
-      });
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
@@ -231,7 +227,7 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll px-4 py-4 pb-20">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 pb-20 scroll-smooth">
         {messages.map((msg) => (
           <div
             key={msg.id}

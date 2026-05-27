@@ -89,12 +89,8 @@ const Rooms = () => {
   }, [fetchProfile]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      requestAnimationFrame(() => {
-        if (isNearBottomRef.current && scrollRef.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-        }
-      });
+    if (isNearBottomRef.current && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
@@ -156,7 +152,7 @@ const Rooms = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName="الدردشة العامة" />
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll pb-36">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36 scroll-smooth">
         <WelcomeBanner />
         <div className="flex justify-center py-2">
           <button
