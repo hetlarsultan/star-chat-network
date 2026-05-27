@@ -149,7 +149,7 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" data-testid="messages-container">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" style={{ touchAction: "pan-y" }} data-testid="messages-container">
         <div className="flex-grow" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">

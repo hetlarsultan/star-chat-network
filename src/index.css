@@ -59,12 +59,14 @@
   * {
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
 
   html {
     direction: rtl;
     height: 100%;
     overflow: hidden;
+    touch-action: pan-y;
     overscroll-behavior: none;
   }
 
@@ -74,12 +76,14 @@
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   #root {
     height: 100%;
     overflow: hidden;
+    touch-action: pan-y;
   }
 }
 
@@ -118,7 +122,7 @@
   .chat-scroll-whatsapp {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    touch-action: auto;
+    touch-action: pan-y pan-x pinch-zoom;
     will-change: scroll-position;
     -ms-scroll-chaining: none;
     display: flex;
