@@ -115,19 +115,10 @@
   .chat-scroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
     touch-action: pan-y;
     will-change: scroll-position;
     -ms-scroll-chaining: none;
-  }
-  .chat-scroll-whatsapp {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
-    will-change: scroll-position;
-    -ms-scroll-chaining: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
   }
 }
 

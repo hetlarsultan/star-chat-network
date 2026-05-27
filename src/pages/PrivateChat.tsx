@@ -231,7 +231,7 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp px-4 py-4 pb-20" data-testid="messages-container">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll px-4 py-4 pb-20">
         {messages.map((msg) => (
           <div
             key={msg.id}
