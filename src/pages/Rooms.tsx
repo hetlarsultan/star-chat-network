@@ -104,41 +104,6 @@ const Rooms = () => {
     await supabase.from("messages").insert(insertData);
   };
 
-  // Dev: add fake local messages to test scrolling
-  const addTestMessages = () => {
-    const names = ["أبو خالد", "نجمة الشرق", "عاشق الليل", "سكون", "روتشان", "ليلى", "حمزة"];
-    const texts = ["مرحبا بالجميع 🌍", "كيف حالكم؟", "الحمد لله بخير", "مساء الخير ✨", "أهلاً وسهلاً", "تمام الحمد لله", "أحلى مسا 🌙", "الله يسعدكم"];
-    const countries = ["🇸🇦", "🇪🇬", "🇮🇶", "🇾🇪", "🇲🇦", "🇸🇾"];
-    const newMsgs: MessageWithProfile[] = Array.from({ length: 20 }, (_, i) => ({
-      id: `test-${Date.now()}-${i}`,
-      text: texts[Math.floor(Math.random() * texts.length)],
-      created_at: new Date().toISOString(),
-      user_id: `fake-${i}`,
-      room_id: PUBLIC_ROOM_ID,
-      profile: {
-        id: `fake-profile-${i}`,
-        user_id: `fake-${i}`,
-        username: names[Math.floor(Math.random() * names.length)],
-        level: Math.floor(Math.random() * 50) + 1,
-        country: countries[Math.floor(Math.random() * countries.length)],
-        gender: Math.random() > 0.5 ? "male" : "female",
-        avatar_url: null,
-        bio: null,
-        status: null,
-        age: null,
-        is_online: true,
-        likes_count: 0,
-        last_seen: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        name_color: null,
-        font_color: null,
-        font_style: null,
-      } as any,
-    }));
-    setMessages(prev => [...prev, ...newMsgs]);
-  };
-
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
   };
@@ -154,14 +119,6 @@ const Rooms = () => {
 
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36 scroll-smooth">
         <WelcomeBanner />
-        <div className="flex justify-center py-2">
-          <button
-            onClick={addTestMessages}
-            className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full"
-          >
-            🧪 إضافة 20 رسالة تجريبية
-          </button>
-        </div>
         <div className="mt-2">
           {messages.map(msg => (
             <ChatMessage key={msg.id}
