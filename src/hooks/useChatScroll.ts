@@ -145,19 +145,7 @@ export function useChatScroll({
       if (saved && !saved.atBottom) {
         scrollRef.current.scrollTop = saved.position;
       } else {
-        // Scroll to bottom immediately + after a frame to ensure content is rendered
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        requestAnimationFrame(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          }
-        });
-        // Extra delayed scroll for slow renders
-        setTimeout(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-          }
-        }, 100);
       }
       prevMessageCount.current = messageCount;
       return;
