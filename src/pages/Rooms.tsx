@@ -9,7 +9,7 @@ import UserProfileModal from "@/components/UserProfileModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 
 const PUBLIC_ROOM_ID = "c4e3b9ac-aa54-4eb7-b992-d1e22e0fc74a";
 const MAX_MESSAGES = 70;
@@ -33,17 +33,14 @@ const Rooms = () => {
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
   const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [showScrollUp, setShowScrollUp] = useState(false);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
 
   const scrollToBottom = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, []);
-
-  const scrollToTop = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -52,7 +49,6 @@ const Rooms = () => {
     const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
     isNearBottomRef.current = nearBottom;
     setShowScrollDown(!nearBottom);
-    setShowScrollUp(scrollTop > 300);
   }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
@@ -92,18 +88,12 @@ const Rooms = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfile]);
 
-  const initialScrollDone = useRef(false);
-
   useEffect(() => {
-    if (!scrollRef.current) return;
-    if (!initialScrollDone.current && messages.length > 0) {
-      initialScrollDone.current = true;
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      return;
-    }
-    if (isNearBottomRef.current) {
+    if (scrollRef.current) {
       requestAnimationFrame(() => {
-        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+        if (isNearBottomRef.current && scrollRef.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+        }
       });
     }
   }, [messages]);
@@ -205,15 +195,6 @@ const Rooms = () => {
           ))}
         </div>
       </div>
-
-      {showScrollUp && (
-        <button
-          onClick={scrollToTop}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
 
       {showScrollDown && (
         <button
