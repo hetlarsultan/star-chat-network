@@ -3,8 +3,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import EmojiPicker from "./EmojiPicker";
-import VoiceRecorder from "./VoiceRecorder";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ReplyTo {
   username: string;
@@ -13,13 +11,11 @@ interface ReplyTo {
 
 interface Props {
   onSend: (text: string, replyTo?: ReplyTo) => void;
-  onVoiceSend?: (voiceUrl: string) => void;
   replyTo?: ReplyTo | null;
   onCancelReply?: () => void;
-  roomId?: string;
 }
 
-const ChatInput = ({ onSend, onVoiceSend, replyTo, onCancelReply, roomId }: Props) => {
+const ChatInput = ({ onSend, replyTo, onCancelReply }: Props) => {
   const [text, setText] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -32,20 +28,6 @@ const ChatInput = ({ onSend, onVoiceSend, replyTo, onCancelReply, roomId }: Prop
       setText("");
       onCancelReply?.();
     }
-  };
-
-  const handleVoiceSend = async (blob: Blob, duration: number) => {
-    if (!user) return;
-    const path = `${user.id}/${Date.now()}.webm`;
-    const { error } = await supabase.storage.from("voice-messages").upload(path, blob, {
-      contentType: "audio/webm",
-    });
-    if (error) {
-      console.error("Upload error:", error);
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("voice-messages").getPublicUrl(path);
-    onVoiceSend?.(urlData.publicUrl);
   };
 
   return (
@@ -88,7 +70,6 @@ const ChatInput = ({ onSend, onVoiceSend, replyTo, onCancelReply, roomId }: Prop
           dir="rtl"
         />
         <EmojiPicker onSelect={(emoji) => setText(prev => prev + emoji)} />
-        <VoiceRecorder onSend={handleVoiceSend} />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
 import ChatMessage from "@/components/ChatMessage";
@@ -18,7 +19,6 @@ interface MessageWithProfile {
   room_id: string;
   reply_to_username?: string | null;
   reply_to_text?: string | null;
-  voice_url?: string | null;
   profile?: Tables<"profiles"> | null;
 }
 
@@ -88,16 +88,6 @@ const ChatRoom = () => {
     await supabase.from("messages").insert(insertData);
   };
 
-  const handleVoiceSend = async (voiceUrl: string) => {
-    if (!user || !roomId) return;
-    await supabase.from("messages").insert({
-      room_id: roomId,
-      user_id: user.id,
-      text: "🎤 رسالة صوتية",
-      voice_url: voiceUrl,
-    } as any);
-  };
-
   const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
   };
@@ -133,7 +123,6 @@ const ChatRoom = () => {
                 isGuest: msg.profile?.username?.startsWith("زائر_") || false,
                 replyToUsername: msg.reply_to_username || null,
                 replyToText: msg.reply_to_text || null,
-                voiceUrl: msg.voice_url || null,
               }}
               onAvatarClick={() => handleAvatarClick(msg.profile)}
               onUsernameClick={() => handleReply(msg)}
@@ -142,12 +131,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <ChatInput
-        onSend={handleSend}
-        onVoiceSend={handleVoiceSend}
-        replyTo={replyTo}
-        onCancelReply={() => setReplyTo(null)}
-      />
+      <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
       <BottomNav />
 
       {selectedUser && (

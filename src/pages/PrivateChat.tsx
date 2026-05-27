@@ -4,8 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import EmojiPicker from "@/components/EmojiPicker";
-import VoiceRecorder from "@/components/VoiceRecorder";
-import VoicePlayer from "@/components/VoicePlayer";
 
 interface PrivateMsg {
   id: string;
@@ -16,7 +14,6 @@ interface PrivateMsg {
   is_read: boolean;
   image_url?: string | null;
   is_image_viewed?: boolean;
-  voice_url?: string | null;
 }
 
 interface PartnerProfile {
@@ -109,23 +106,6 @@ const PrivateChat = () => {
     setText("");
   };
 
-  const handleVoiceSend = async (blob: Blob, duration: number) => {
-    if (!user || !userId) return;
-    const path = `${user.id}/${Date.now()}.webm`;
-    const { error } = await supabase.storage.from("voice-messages").upload(path, blob, {
-      contentType: "audio/webm",
-    });
-    if (error) return;
-    const { data: urlData } = supabase.storage.from("voice-messages").getPublicUrl(path);
-
-    await supabase.from("private_messages").insert({
-      sender_id: user.id,
-      receiver_id: userId,
-      text: "🎤 رسالة صوتية",
-      voice_url: urlData.publicUrl,
-    } as any);
-  };
-
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !userId) return;
@@ -147,7 +127,7 @@ const PrivateChat = () => {
       receiver_id: userId,
       text: "📷 صورة",
       image_url: urlData.publicUrl,
-    } as any);
+    });
 
     setSendingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -157,14 +137,17 @@ const PrivateChat = () => {
     if (!msg.image_url) return;
     setViewingImage(msg.image_url);
 
+    // If I'm the receiver and haven't viewed yet, mark as viewed then delete after close
     if (msg.receiver_id === user?.id && !msg.is_image_viewed) {
       await supabase.from("private_messages").update({ is_image_viewed: true } as any).eq("id", msg.id);
     }
   };
 
   const handleCloseImage = async () => {
+    // Find the message for this image and delete if it was viewed
     const msg = messages.find(m => m.image_url === viewingImage);
     if (msg && msg.is_image_viewed) {
+      // Delete from storage
       const urlParts = msg.image_url?.split("/avatars/");
       if (urlParts && urlParts[1]) {
         await supabase.storage.from("avatars").remove([decodeURIComponent(urlParts[1])]);
@@ -222,9 +205,7 @@ const PrivateChat = () => {
                   : "bg-card border border-border text-foreground"
               }`}
             >
-              {msg.voice_url ? (
-                <VoicePlayer voiceUrl={msg.voice_url} />
-              ) : msg.image_url && !msg.is_image_viewed ? (
+              {msg.image_url && !msg.is_image_viewed ? (
                 <button
                   onClick={() => handleViewImage(msg)}
                   className="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3 text-primary hover:bg-primary/20 transition-colors"
@@ -245,6 +226,7 @@ const PrivateChat = () => {
         ))}
       </div>
 
+      {/* Image viewer overlay */}
       {viewingImage && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[200] flex flex-col items-center justify-center" onClick={handleCloseImage}>
           <p className="text-xs font-cairo text-destructive mb-4 animate-pulse">⚠️ الصورة ستختفي بعد إغلاقها</p>
@@ -291,7 +273,6 @@ const PrivateChat = () => {
         >
           <Image className="w-5 h-5" />
         </button>
-        <VoiceRecorder onSend={handleVoiceSend} />
       </div>
     </div>
   );
