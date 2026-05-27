@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowRight, Send, Image, X, Eye, ArrowDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowRight, Send, Image, X, Eye } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,22 +39,6 @@ const PrivateChat = () => {
   const [sendingImage, setSendingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isNearBottomRef = useRef(true);
-  const [showScrollDown, setShowScrollDown] = useState(false);
-
-  const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    }
-  }, []);
-
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    isNearBottomRef.current = nearBottom;
-    setShowScrollDown(!nearBottom);
-  }, []);
 
   useEffect(() => {
     if (!userId || !user) return;
@@ -112,9 +96,7 @@ const PrivateChat = () => {
   }, [userId, user]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
   const handleSend = async () => {
@@ -227,7 +209,7 @@ const PrivateChat = () => {
         </div>
       )}
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 pb-20 scroll-smooth">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 pb-20">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -262,15 +244,6 @@ const PrivateChat = () => {
           </div>
         ))}
       </div>
-
-      {showScrollDown && (
-        <button
-          onClick={scrollToBottom}
-          className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce"
-        >
-          <ArrowDown className="w-5 h-5" />
-        </button>
-      )}
 
       {viewingImage && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[200] flex flex-col items-center justify-center" onClick={handleCloseImage}>

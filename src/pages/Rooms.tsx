@@ -90,7 +90,7 @@ const Rooms = () => {
 
   useEffect(() => {
     if (isNearBottomRef.current && scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
