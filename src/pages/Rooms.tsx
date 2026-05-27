@@ -6,15 +6,13 @@ import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
-import NewMessagesIndicator from "@/components/NewMessagesIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useChatScroll, cacheMessages, getCachedMessages } from "@/hooks/useChatScroll";
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 const PUBLIC_ROOM_ID = "c4e3b9ac-aa54-4eb7-b992-d1e22e0fc74a";
-const PAGE_SIZE = 50;
+const MAX_MESSAGES = 70;
 
 interface MessageWithProfile {
   id: string;
@@ -34,38 +32,28 @@ const Rooms = () => {
   const [messages, setMessages] = useState<MessageWithProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<Tables<"profiles"> | null>(null);
   const [replyTo, setReplyTo] = useState<{ username: string; text: string } | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showScrollUp, setShowScrollUp] = useState(false);
   const profilesCacheRef = useRef<Record<string, Tables<"profiles">>>({});
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
 
-  const loadOlderMessages = useCallback(async () => {
-    if (messages.length === 0) return;
-    const oldest = messages[0];
-    const { data } = await supabase
-      .from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
-      .lt("created_at", oldest.created_at)
-      .order("created_at", { ascending: false }).limit(PAGE_SIZE);
-    if (!data || data.length === 0) { setHasMore(false); return; }
-    if (data.length < PAGE_SIZE) setHasMore(false);
-    const sorted = data.reverse();
-    const userIds = [...new Set(sorted.map(m => m.user_id))];
-    const missing = userIds.filter(id => !profilesCacheRef.current[id]);
-    if (missing.length) {
-      const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", missing);
-      profiles?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
-    }
-    const withProfiles = sorted.map(m => ({ ...m, profile: profilesCacheRef.current[m.user_id] || null }));
-    setMessages(prev => [...withProfiles, ...prev]);
-  }, [messages]);
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, []);
 
-  const {
-    scrollRef, handleScroll, scrollToBottom, scrollToTop,
-    showScrollDown, showScrollUp, showNewMessages, dismissNewMessages, isLoadingMore,
-  } = useChatScroll({
-    conversationId: `room_${PUBLIC_ROOM_ID}`,
-    messageCount: messages.length,
-    onLoadMore: loadOlderMessages,
-    hasMore,
-  });
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollDown(!nearBottom);
+    setShowScrollUp(scrollTop > 300);
+  }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<Tables<"profiles"> | null> => {
     if (profilesCacheRef.current[userId]) return profilesCacheRef.current[userId];
@@ -75,14 +63,11 @@ const Rooms = () => {
   }, []);
 
   useEffect(() => {
-    // Load cached messages first for instant display
-    const cached = getCachedMessages<MessageWithProfile>(`room_${PUBLIC_ROOM_ID}`);
-    if (cached.length > 0) setMessages(cached);
-
     const fetchMessages = async () => {
       await supabase.rpc("cleanup_old_messages" as any);
+      
       const { data } = await supabase.from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
-        .order("created_at", { ascending: false }).limit(PAGE_SIZE);
+        .order("created_at", { ascending: false }).limit(MAX_MESSAGES);
       if (!data) return;
       const sorted = data.reverse();
       const userIds = [...new Set(sorted.map(m => m.user_id))];
@@ -90,10 +75,7 @@ const Rooms = () => {
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-      const withProfiles = sorted.map(m => ({ ...m, profile: profileMap[m.user_id] || null }));
-      setMessages(withProfiles);
-      cacheMessages(`room_${PUBLIC_ROOM_ID}`, withProfiles);
-      setHasMore(data.length >= PAGE_SIZE);
+      setMessages(sorted.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
 
@@ -103,16 +85,28 @@ const Rooms = () => {
         async (payload) => {
           const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
-          setMessages(prev => {
-            const updated = [...prev, { ...msg, profile }];
-            cacheMessages(`room_${PUBLIC_ROOM_ID}`, updated);
-            return updated;
-          });
+          setMessages(prev => [...prev.slice(-MAX_MESSAGES + 1), { ...msg, profile }]);
         }
       ).subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfile]);
+
+  const initialScrollDone = useRef(false);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (!initialScrollDone.current && messages.length > 0) {
+      initialScrollDone.current = true;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      return;
+    }
+    if (isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      });
+    }
+  }, [messages]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
     if (!user) return;
@@ -124,6 +118,7 @@ const Rooms = () => {
     await supabase.from("messages").insert(insertData);
   };
 
+  // Dev: add fake local messages to test scrolling
   const addTestMessages = () => {
     const names = ["أبو خالد", "نجمة الشرق", "عاشق الليل", "سكون", "روتشان", "ليلى", "حمزة"];
     const texts = ["مرحبا بالجميع 🌍", "كيف حالكم؟", "الحمد لله بخير", "مساء الخير ✨", "أهلاً وسهلاً", "تمام الحمد لله", "أحلى مسا 🌙", "الله يسعدكم"];
@@ -135,17 +130,24 @@ const Rooms = () => {
       user_id: `fake-${i}`,
       room_id: PUBLIC_ROOM_ID,
       profile: {
-        id: `fake-profile-${i}`, user_id: `fake-${i}`,
+        id: `fake-profile-${i}`,
+        user_id: `fake-${i}`,
         username: names[Math.floor(Math.random() * names.length)],
         level: Math.floor(Math.random() * 50) + 1,
         country: countries[Math.floor(Math.random() * countries.length)],
         gender: Math.random() > 0.5 ? "male" : "female",
-        avatar_url: null, bio: null, status: null, age: null,
-        is_online: true, likes_count: 0,
+        avatar_url: null,
+        bio: null,
+        status: null,
+        age: null,
+        is_online: true,
+        likes_count: 0,
         last_seen: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        name_color: null, font_color: null, font_style: null,
+        name_color: null,
+        font_color: null,
+        font_style: null,
       } as any,
     }));
     setMessages(prev => [...prev, ...newMsgs]);
@@ -165,15 +167,13 @@ const Rooms = () => {
       <TopToolbar roomName="الدردشة العامة" />
 
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide chat-scroll-whatsapp pb-36" data-testid="messages-container">
-        {isLoadingMore && (
-          <div className="flex justify-center py-3">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
         <div className="flex-shrink-0">
           <WelcomeBanner />
           <div className="flex justify-center py-2">
-            <button onClick={addTestMessages} className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full">
+            <button
+              onClick={addTestMessages}
+              className="bg-accent/80 text-accent-foreground text-xs font-cairo px-3 py-1 rounded-full"
+            >
               🧪 إضافة 20 رسالة تجريبية
             </button>
           </div>
@@ -207,20 +207,28 @@ const Rooms = () => {
       </div>
 
       {showScrollUp && (
-        <button onClick={scrollToTop} className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg">
+        <button
+          onClick={scrollToTop}
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-secondary text-secondary-foreground rounded-full p-2 shadow-lg"
+        >
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
 
-      {showNewMessages && <NewMessagesIndicator onClick={() => { scrollToBottom(); dismissNewMessages(); }} />}
-
-      {showScrollDown && !showNewMessages && (
-        <button onClick={scrollToBottom} className="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce">
+      {showScrollDown && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-36 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-full p-2 shadow-lg animate-bounce"
+        >
           <ArrowDown className="w-5 h-5" />
         </button>
       )}
 
-      <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+      <ChatInput
+        onSend={handleSend}
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
+      />
       <BottomNav />
       {selectedUser && <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />}
     </div>
