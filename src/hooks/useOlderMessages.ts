@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
 const PAGE_SIZE = 30;
+const MAX_RETRIES = 3;
 
 export interface MessageWithProfile {
   id: string;
@@ -15,9 +16,11 @@ export interface MessageWithProfile {
   profile?: Tables<"profiles"> | null;
 }
 
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 /**
- * Hook: load older messages on scroll-to-top while preserving scroll position.
- * Returns onScroll handler to attach to the scroll container.
+ * Loads older messages on scroll-to-top with scroll-position preservation,
+ * exponential-backoff retry on failure, and an `error` flag for manual retry UI.
  */
 export function useOlderMessages(
   roomId: string | undefined,
@@ -28,6 +31,7 @@ export function useOlderMessages(
 ) {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const lockRef = useRef(false);
 
   const loadOlder = useCallback(async () => {
@@ -38,20 +42,35 @@ export function useOlderMessages(
 
     lockRef.current = true;
     setLoading(true);
+    setError(null);
 
     const oldest = messages[0].created_at;
     const prevScrollHeight = container.scrollHeight;
     const prevScrollTop = container.scrollTop;
 
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("room_id", roomId)
-      .lt("created_at", oldest)
-      .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
+    let data: any[] | null = null;
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const { data: d, error: e } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("room_id", roomId)
+        .lt("created_at", oldest)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      if (!e) { data = d; break; }
+      lastErr = e;
+      await sleep(400 * Math.pow(2, attempt)); // 400, 800, 1600ms
+    }
 
-    if (!data || data.length === 0) {
+    if (data === null) {
+      setError(lastErr?.message || "فشل تحميل الرسائل الأقدم");
+      setLoading(false);
+      lockRef.current = false;
+      return;
+    }
+
+    if (data.length === 0) {
       setHasMore(false);
       setLoading(false);
       lockRef.current = false;
@@ -63,11 +82,15 @@ export function useOlderMessages(
       id => !profilesCacheRef.current[id],
     );
     if (missingIds.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("user_id", missingIds);
-      profs?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
+      try {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("user_id", missingIds);
+        profs?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
+      } catch {
+        // non-fatal: messages still render without profile
+      }
     }
 
     const withProfiles = ordered.map(m => ({
@@ -78,11 +101,13 @@ export function useOlderMessages(
     setMessages(prev => [...withProfiles, ...prev]);
     if (data.length < PAGE_SIZE) setHasMore(false);
 
-    // Restore scroll position after DOM update
+    // Preserve scroll position after DOM update (avoids jump on iOS/Android)
     requestAnimationFrame(() => {
-      if (!container) return;
-      const newScrollHeight = container.scrollHeight;
-      container.scrollTop = newScrollHeight - prevScrollHeight + prevScrollTop;
+      const c = scrollRef.current;
+      if (c) {
+        const newScrollHeight = c.scrollHeight;
+        c.scrollTop = newScrollHeight - prevScrollHeight + prevScrollTop;
+      }
       setLoading(false);
       lockRef.current = false;
     });
@@ -96,5 +121,10 @@ export function useOlderMessages(
     [loadOlder],
   );
 
-  return { onScroll, loading, hasMore };
+  const retry = useCallback(() => {
+    setError(null);
+    loadOlder();
+  }, [loadOlder]);
+
+  return { onScroll, loading, hasMore, error, retry };
 }
