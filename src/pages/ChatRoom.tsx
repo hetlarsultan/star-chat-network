@@ -10,6 +10,9 @@ import UserProfileModal from "@/components/UserProfileModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
+import { useOlderMessages } from "@/hooks/useOlderMessages";
+
+const INITIAL_PAGE = 30;
 
 interface MessageWithProfile {
   id: string;
@@ -49,15 +52,16 @@ const ChatRoom = () => {
     const fetchMessages = async () => {
       const { data } = await supabase
         .from("messages").select("*").eq("room_id", roomId)
-        .order("created_at", { ascending: true }).limit(100);
+        .order("created_at", { ascending: false }).limit(INITIAL_PAGE);
       if (!data) return;
+      const ordered = [...data].reverse();
 
-      const userIds = [...new Set(data.map(m => m.user_id))];
+      const userIds = [...new Set(ordered.map(m => m.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-      setMessages(data.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
+      setMessages(ordered.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
 
@@ -74,8 +78,16 @@ const ChatRoom = () => {
     return () => { supabase.removeChannel(channel); };
   }, [roomId, fetchProfile]);
 
+  const { onScroll } = useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
+
+  const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current || messages.length === 0) return;
+    const lastId = messages[messages.length - 1].id;
+    if (lastId !== lastIdRef.current) {
+      lastIdRef.current = lastId;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
@@ -101,7 +113,7 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
