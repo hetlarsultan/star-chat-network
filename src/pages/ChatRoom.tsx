@@ -10,6 +10,9 @@ import UserProfileModal from "@/components/UserProfileModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
+import { useOlderMessages } from "@/hooks/useOlderMessages";
+
+const INITIAL_PAGE = 30;
 
 interface MessageWithProfile {
   id: string;
