@@ -139,6 +139,13 @@ const Rooms = () => {
           ))}
         </div>
       </div>
+      <ChatScrollHelpers
+        loadingOlder={loadingOlder}
+        olderError={olderError}
+        onRetryOlder={retryOlder}
+        unreadCount={unreadCount}
+        onJumpToBottom={scrollToBottom}
+      />
       <ChatInput onSend={handleSend} />
       <BottomNav />
       {selectedUser && <UserProfileModal profile={selectedUser} onClose={() => setSelectedUser(null)} />}
