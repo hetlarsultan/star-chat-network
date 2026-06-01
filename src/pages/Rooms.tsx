@@ -33,16 +33,18 @@ const Rooms = () => {
     const fetchMessages = async () => {
       // Clean old messages first
       await supabase.rpc("cleanup_old_messages" as any);
-      
+
+      // Load the latest INITIAL_PAGE messages (newest first then reverse to ascending)
       const { data } = await supabase.from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
-        .order("created_at", { ascending: true }).limit(100);
+        .order("created_at", { ascending: false }).limit(INITIAL_PAGE);
       if (!data) return;
-      const userIds = [...new Set(data.map(m => m.user_id))];
+      const ordered = [...data].reverse();
+      const userIds = [...new Set(ordered.map(m => m.user_id))];
       const { data: profiles } = await supabase.from("profiles").select("*").in("user_id", userIds);
       const profileMap: Record<string, Tables<"profiles">> = {};
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
-      setMessages(data.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
+      setMessages(ordered.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
     };
     fetchMessages();
 
@@ -59,8 +61,17 @@ const Rooms = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfile]);
 
+  const { onScroll } = useOlderMessages(PUBLIC_ROOM_ID, scrollRef, messages, setMessages, profilesCacheRef);
+
+  // Auto-scroll to bottom only when a NEW message arrives at the end (not on prepend of older).
+  const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current || messages.length === 0) return;
+    const lastId = messages[messages.length - 1].id;
+    if (lastId !== lastIdRef.current) {
+      lastIdRef.current = lastId;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async (text: string) => {
