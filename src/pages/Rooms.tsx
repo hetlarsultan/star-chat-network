@@ -62,18 +62,46 @@ const Rooms = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfile]);
 
-  const { onScroll } = useOlderMessages(PUBLIC_ROOM_ID, scrollRef, messages, setMessages, profilesCacheRef);
+  const { onScroll: onScrollOlder, loading: loadingOlder, error: olderError, retry: retryOlder } =
+    useOlderMessages(PUBLIC_ROOM_ID, scrollRef, messages, setMessages, profilesCacheRef);
 
-  // Auto-scroll to bottom only when a NEW message arrives at the end (not on prepend of older).
+  // Track whether the user is near the bottom; only auto-scroll when they are.
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const isNearBottomRef = useRef(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    isNearBottomRef.current = near;
+    setIsNearBottom(near);
+    if (near) setUnreadCount(0);
+    onScrollOlder(e);
+  }, [onScrollOlder]);
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+    setUnreadCount(0);
+  }, []);
+
+  // Auto-scroll only when a NEW message arrives at the end AND user is near bottom.
   const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!scrollRef.current || messages.length === 0) return;
-    const lastId = messages[messages.length - 1].id;
-    if (lastId !== lastIdRef.current) {
-      lastIdRef.current = lastId;
+    const lastMsg = messages[messages.length - 1];
+    const lastId = lastMsg.id;
+    if (lastId === lastIdRef.current) return;
+    const isInitial = lastIdRef.current === null;
+    lastIdRef.current = lastId;
+
+    if (isInitial || isNearBottomRef.current || lastMsg.user_id === user?.id) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else {
+      setUnreadCount(c => c + 1);
     }
-  }, [messages]);
+  }, [messages, user?.id]);
 
   const handleSend = async (text: string) => {
     if (!user) return;
