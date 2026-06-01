@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import { useOlderMessages } from "@/hooks/useOlderMessages";
+import ChatScrollHelpers from "@/components/ChatScrollHelpers";
 
 const INITIAL_PAGE = 30;
 
@@ -78,17 +79,42 @@ const ChatRoom = () => {
     return () => { supabase.removeChannel(channel); };
   }, [roomId, fetchProfile]);
 
-  const { onScroll } = useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
+  const { onScroll: onScrollOlder, loading: loadingOlder, error: olderError, retry: retryOlder } =
+    useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
+
+  const isNearBottomRef = useRef(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    isNearBottomRef.current = near;
+    if (near) setUnreadCount(0);
+    onScrollOlder(e);
+  }, [onScrollOlder]);
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+    setUnreadCount(0);
+  }, []);
 
   const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!scrollRef.current || messages.length === 0) return;
-    const lastId = messages[messages.length - 1].id;
-    if (lastId !== lastIdRef.current) {
-      lastIdRef.current = lastId;
+    const lastMsg = messages[messages.length - 1];
+    const lastId = lastMsg.id;
+    if (lastId === lastIdRef.current) return;
+    const isInitial = lastIdRef.current === null;
+    lastIdRef.current = lastId;
+
+    if (isInitial || isNearBottomRef.current || lastMsg.user_id === user?.id) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else {
+      setUnreadCount(c => c + 1);
     }
-  }, [messages]);
+  }, [messages, user?.id]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
     if (!user || !roomId) return;
@@ -113,7 +139,7 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
@@ -142,6 +168,14 @@ const ChatRoom = () => {
           ))}
         </div>
       </div>
+
+      <ChatScrollHelpers
+        loadingOlder={loadingOlder}
+        olderError={olderError}
+        onRetryOlder={retryOlder}
+        unreadCount={unreadCount}
+        onJumpToBottom={scrollToBottom}
+      />
 
       <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
       <BottomNav />
