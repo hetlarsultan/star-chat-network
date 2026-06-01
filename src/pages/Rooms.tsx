@@ -9,17 +9,10 @@ import UserProfileModal from "@/components/UserProfileModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOlderMessages, type MessageWithProfile } from "@/hooks/useOlderMessages";
 
 const PUBLIC_ROOM_ID = "c4e3b9ac-aa54-4eb7-b992-d1e22e0fc74a";
-
-interface MessageWithProfile {
-  id: string;
-  text: string;
-  created_at: string;
-  user_id: string;
-  room_id: string;
-  profile?: Tables<"profiles"> | null;
-}
+const INITIAL_PAGE = 30;
 
 const Rooms = () => {
   const navigate = useNavigate();
