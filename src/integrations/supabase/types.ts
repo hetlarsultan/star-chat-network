@@ -119,6 +119,7 @@ export type Database = {
           room_id: string
           text: string
           user_id: string
+          voice_url: string | null
         }
         Insert: {
           created_at?: string
@@ -128,6 +129,7 @@ export type Database = {
           room_id: string
           text: string
           user_id: string
+          voice_url?: string | null
         }
         Update: {
           created_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           room_id?: string
           text?: string
           user_id?: string
+          voice_url?: string | null
         }
         Relationships: [
           {
@@ -158,6 +161,7 @@ export type Database = {
           receiver_id: string
           sender_id: string
           text: string
+          voice_url: string | null
         }
         Insert: {
           created_at?: string
@@ -168,6 +172,7 @@ export type Database = {
           receiver_id: string
           sender_id: string
           text: string
+          voice_url?: string | null
         }
         Update: {
           created_at?: string
@@ -178,6 +183,7 @@ export type Database = {
           receiver_id?: string
           sender_id?: string
           text?: string
+          voice_url?: string | null
         }
         Relationships: []
       }
