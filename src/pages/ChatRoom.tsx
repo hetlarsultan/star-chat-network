@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import { useOlderMessages } from "@/hooks/useOlderMessages";
+import ChatScrollHelpers from "@/components/ChatScrollHelpers";
 
 const INITIAL_PAGE = 30;
 
