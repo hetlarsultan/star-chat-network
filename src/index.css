@@ -65,6 +65,7 @@
     direction: rtl;
     height: 100%;
     overflow: hidden;
+    touch-action: manipulation;
   }
 
   body {
@@ -73,12 +74,23 @@
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   #root {
     height: 100%;
     overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  .overflow-y-auto {
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button, a, [role="button"], input, textarea, select {
+    touch-action: manipulation;
   }
 }
 
