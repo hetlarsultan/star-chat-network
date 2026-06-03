@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOlderMessages, type MessageWithProfile } from "@/hooks/useOlderMessages";
+import { useRealtimeResync } from "@/hooks/useRealtimeResync";
 
 const PUBLIC_ROOM_ID = "c4e3b9ac-aa54-4eb7-b992-d1e22e0fc74a";
 const INITIAL_PAGE = 30;
@@ -30,12 +31,39 @@ const Rooms = () => {
     return data;
   }, []);
 
+  const lastSyncRef = useRef<string | null>(null);
+
+  const mergeIncoming = useCallback((incoming: MessageWithProfile[]) => {
+    if (!incoming.length) return;
+    setMessages(prev => {
+      const existing = new Set(prev.map(m => m.id));
+      const fresh = incoming.filter(m => !existing.has(m.id));
+      if (!fresh.length) return prev;
+      const merged = [...prev, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      return merged;
+    });
+    const latest = incoming[incoming.length - 1]?.created_at;
+    if (latest && (!lastSyncRef.current || latest > lastSyncRef.current)) {
+      lastSyncRef.current = latest;
+    }
+  }, []);
+
+  const fetchSince = useCallback(async (since: string) => {
+    const { data } = await supabase.from("messages").select("*")
+      .eq("room_id", PUBLIC_ROOM_ID).gt("created_at", since)
+      .order("created_at", { ascending: true }).limit(200);
+    if (!data?.length) return;
+    const missing = [...new Set(data.map(m => m.user_id))].filter(id => !profilesCacheRef.current[id]);
+    if (missing.length) {
+      const { data: profs } = await supabase.from("profiles").select("*").in("user_id", missing);
+      profs?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
+    }
+    mergeIncoming(data.map(m => ({ ...m, profile: profilesCacheRef.current[m.user_id] || null })));
+  }, [mergeIncoming]);
+
   useEffect(() => {
     const fetchMessages = async () => {
-      // Clean old messages first
       await supabase.rpc("cleanup_old_messages" as any);
-
-      // Load the latest INITIAL_PAGE messages (newest first then reverse to ascending)
       const { data } = await supabase.from("messages").select("*").eq("room_id", PUBLIC_ROOM_ID)
         .order("created_at", { ascending: false }).limit(INITIAL_PAGE);
       if (!data) return;
@@ -46,6 +74,7 @@ const Rooms = () => {
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
       setMessages(ordered.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
+      lastSyncRef.current = ordered[ordered.length - 1]?.created_at || new Date().toISOString();
     };
     fetchMessages();
 
@@ -55,12 +84,16 @@ const Rooms = () => {
         async (payload) => {
           const msg = payload.new as Tables<"messages">;
           const profile = await fetchProfile(msg.user_id);
-          setMessages(prev => [...prev, { ...msg, profile }]);
+          mergeIncoming([{ ...msg, profile }]);
         }
-      ).subscribe();
+      ).subscribe((status) => {
+        if (status === "SUBSCRIBED" && lastSyncRef.current) fetchSince(lastSyncRef.current);
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchProfile]);
+  }, [fetchProfile, mergeIncoming, fetchSince]);
+
+  useRealtimeResync(() => { if (lastSyncRef.current) fetchSince(lastSyncRef.current); });
 
   const { onScroll: onScrollOlder, loading: loadingOlder, error: olderError, retry: retryOlder } =
     useOlderMessages(PUBLIC_ROOM_ID, scrollRef, messages, setMessages, profilesCacheRef);
