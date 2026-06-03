@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, Send, Image, X, Eye } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeResync } from "@/hooks/useRealtimeResync";
 import EmojiPicker from "@/components/EmojiPicker";
 
 interface PrivateMsg {
