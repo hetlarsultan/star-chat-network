@@ -98,7 +98,11 @@ export function useOlderMessages(
       profile: profilesCacheRef.current[m.user_id] || null,
     }));
 
-    setMessages(prev => [...withProfiles, ...prev]);
+    setMessages(prev => {
+      const existing = new Set(prev.map(m => m.id));
+      const fresh = withProfiles.filter(m => !existing.has(m.id));
+      return [...fresh, ...prev];
+    });
     if (data.length < PAGE_SIZE) setHasMore(false);
 
     // Preserve scroll position after DOM update (avoids jump on iOS/Android)
