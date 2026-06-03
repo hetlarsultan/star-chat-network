@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tables } from "@/integrations/supabase/types";
 import { useOlderMessages } from "@/hooks/useOlderMessages";
+import { useRealtimeResync } from "@/hooks/useRealtimeResync";
 import ChatScrollHelpers from "@/components/ChatScrollHelpers";
 
 const INITIAL_PAGE = 30;
@@ -44,6 +45,34 @@ const ChatRoom = () => {
     return data;
   }, []);
 
+  const lastSyncRef = useRef<string | null>(null);
+
+  const mergeIncoming = useCallback((incoming: MessageWithProfile[]) => {
+    if (!incoming.length) return;
+    setMessages(prev => {
+      const existing = new Set(prev.map(m => m.id));
+      const fresh = incoming.filter(m => !existing.has(m.id));
+      if (!fresh.length) return prev;
+      return [...prev, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    });
+    const latest = incoming[incoming.length - 1]?.created_at;
+    if (latest && (!lastSyncRef.current || latest > lastSyncRef.current)) lastSyncRef.current = latest;
+  }, []);
+
+  const fetchSince = useCallback(async (since: string) => {
+    if (!roomId) return;
+    const { data } = await supabase.from("messages").select("*")
+      .eq("room_id", roomId).gt("created_at", since)
+      .order("created_at", { ascending: true }).limit(200);
+    if (!data?.length) return;
+    const missing = [...new Set(data.map(m => m.user_id))].filter(id => !profilesCacheRef.current[id]);
+    if (missing.length) {
+      const { data: profs } = await supabase.from("profiles").select("*").in("user_id", missing);
+      profs?.forEach(p => { profilesCacheRef.current[p.user_id] = p; });
+    }
+    mergeIncoming(data.map(m => ({ ...m, profile: profilesCacheRef.current[m.user_id] || null })));
+  }, [roomId, mergeIncoming]);
+
   useEffect(() => {
     if (!roomId) return;
     supabase.from("rooms").select("name").eq("id", roomId).maybeSingle().then(({ data }) => {
@@ -63,6 +92,7 @@ const ChatRoom = () => {
       profiles?.forEach(p => { profileMap[p.user_id] = p; });
       profilesCacheRef.current = { ...profilesCacheRef.current, ...profileMap };
       setMessages(ordered.map(m => ({ ...m, profile: profileMap[m.user_id] || null })));
+      lastSyncRef.current = ordered[ordered.length - 1]?.created_at || new Date().toISOString();
     };
     fetchMessages();
 
@@ -72,12 +102,16 @@ const ChatRoom = () => {
         async (payload) => {
           const msg = payload.new as any;
           const profile = await fetchProfile(msg.user_id);
-          setMessages(prev => [...prev, { ...msg, profile }]);
+          mergeIncoming([{ ...msg, profile }]);
         }
-      ).subscribe();
+      ).subscribe((status) => {
+        if (status === "SUBSCRIBED" && lastSyncRef.current) fetchSince(lastSyncRef.current);
+      });
 
     return () => { supabase.removeChannel(channel); };
-  }, [roomId, fetchProfile]);
+  }, [roomId, fetchProfile, mergeIncoming, fetchSince]);
+
+  useRealtimeResync(() => { if (lastSyncRef.current) fetchSince(lastSyncRef.current); });
 
   const { onScroll: onScrollOlder, loading: loadingOlder, error: olderError, retry: retryOlder } =
     useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
