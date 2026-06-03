@@ -38,6 +38,34 @@ const PrivateChat = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const lastSyncRef = useRef<string | null>(null);
+
+  const markIncomingRead = useCallback(async () => {
+    if (!userId || !user) return;
+    await supabase.from("private_messages").update({ is_read: true })
+      .eq("sender_id", userId).eq("receiver_id", user.id).eq("is_read", false);
+  }, [userId, user]);
+
+  const mergeIncoming = useCallback((incoming: PrivateMsg[]) => {
+    if (!incoming.length) return;
+    setMessages(prev => {
+      const map = new Map(prev.map(m => [m.id, m] as const));
+      incoming.forEach(m => map.set(m.id, m));
+      return Array.from(map.values()).sort((a, b) => a.created_at.localeCompare(b.created_at));
+    });
+    const latest = incoming[incoming.length - 1]?.created_at;
+    if (latest && (!lastSyncRef.current || latest > lastSyncRef.current)) lastSyncRef.current = latest;
+  }, []);
+
+  const fetchSince = useCallback(async (since: string) => {
+    if (!userId || !user) return;
+    const { data } = await supabase.from("private_messages").select("*")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
+      .gt("created_at", since).order("created_at", { ascending: true });
+    if (data?.length) mergeIncoming(data as PrivateMsg[]);
+    if (document.visibilityState === "visible") markIncomingRead();
+  }, [userId, user, mergeIncoming, markIncomingRead]);
+
   useEffect(() => {
     if (!userId || !user) return;
 
@@ -51,14 +79,11 @@ const PrivateChat = () => {
         .select("*")
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
         .order("created_at", { ascending: true });
-      if (data) setMessages(data as PrivateMsg[]);
-
-      await supabase
-        .from("private_messages")
-        .update({ is_read: true })
-        .eq("sender_id", userId)
-        .eq("receiver_id", user.id)
-        .eq("is_read", false);
+      if (data) {
+        setMessages(data as PrivateMsg[]);
+        lastSyncRef.current = (data[data.length - 1] as any)?.created_at || new Date().toISOString();
+      }
+      markIncomingRead();
     };
     fetchMessages();
 
@@ -74,8 +99,8 @@ const PrivateChat = () => {
               (msg.sender_id === user.id && msg.receiver_id === userId) ||
               (msg.sender_id === userId && msg.receiver_id === user.id)
             ) {
-              setMessages((prev) => [...prev, msg]);
-              if (msg.sender_id === userId) {
+              mergeIncoming([msg]);
+              if (msg.sender_id === userId && document.visibilityState === "visible") {
                 supabase.from("private_messages").update({ is_read: true }).eq("id", msg.id);
               }
             }
@@ -88,10 +113,24 @@ const PrivateChat = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && lastSyncRef.current) fetchSince(lastSyncRef.current);
+      });
 
-    return () => { supabase.removeChannel(channel); };
-  }, [userId, user]);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") markIncomingRead();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", markIncomingRead);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", markIncomingRead);
+    };
+  }, [userId, user, mergeIncoming, markIncomingRead, fetchSince]);
+
+  useRealtimeResync(() => { if (lastSyncRef.current) fetchSince(lastSyncRef.current); });
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
