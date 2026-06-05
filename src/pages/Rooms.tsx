@@ -150,9 +150,9 @@ const Rooms = () => {
     await supabase.from("messages").insert({ room_id: PUBLIC_ROOM_ID, user_id: user.id, text });
   };
 
-  const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
+  const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
-  };
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
