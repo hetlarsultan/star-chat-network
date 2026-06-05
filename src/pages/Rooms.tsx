@@ -162,21 +162,11 @@ const Rooms = () => {
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
-            <ChatMessage key={msg.id}
-              message={{
-                id: msg.id,
-                username: msg.profile?.username || "مجهول",
-                text: msg.text,
-                time: new Date(msg.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-                isOwn: msg.user_id === user?.id,
-                level: msg.profile?.level || 1,
-                country: msg.profile?.country || undefined,
-                gender: msg.profile?.gender || undefined,
-                avatarUrl: msg.profile?.avatar_url || null,
-                nameColor: (msg.profile as any)?.name_color || null,
-                isGuest: msg.profile?.username?.startsWith("زائر_") || false,
-              }}
-              onAvatarClick={() => handleAvatarClick(msg.profile)}
+            <ChatMessageRow
+              key={msg.id}
+              msg={msg}
+              currentUserId={user?.id}
+              onAvatarClick={handleAvatarClick}
             />
           ))}
         </div>
