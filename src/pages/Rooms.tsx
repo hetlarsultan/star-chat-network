@@ -187,6 +187,8 @@ const Rooms = () => {
         onRetryOlder={retryOlder}
         unreadCount={unreadCount}
         onJumpToBottom={scrollToBottom}
+        onJumpToTop={scrollToTop}
+        showJumpToTop={isNearBottom}
       />
       <ChatInput onSend={handleSend} />
       <BottomNav />
