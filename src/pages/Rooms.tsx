@@ -122,6 +122,12 @@ const Rooms = () => {
     setUnreadCount(0);
   }, []);
 
+  const scrollToTop = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
   // Auto-scroll only when a NEW message arrives at the end AND user is near bottom.
   const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
