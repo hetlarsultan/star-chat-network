@@ -39,7 +39,10 @@ const Rooms = () => {
       const existing = new Set(prev.map(m => m.id));
       const fresh = incoming.filter(m => !existing.has(m.id));
       if (!fresh.length) return prev;
-      const merged = [...prev, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const merged = [...prev, ...fresh].sort((a, b) => {
+        const t = a.created_at.localeCompare(b.created_at);
+        return t !== 0 ? t : a.id.localeCompare(b.id);
+      });
       return merged;
     });
     const latest = incoming[incoming.length - 1]?.created_at;
