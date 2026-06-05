@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
-import ChatMessage from "@/components/ChatMessage";
+import ChatMessageRow from "@/components/ChatMessageRow";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
