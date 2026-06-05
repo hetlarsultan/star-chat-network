@@ -171,14 +171,14 @@ const ChatRoom = () => {
     await supabase.from("messages").insert(insertData);
   };
 
-  const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
+  const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
-  };
+  }, [user?.id]);
 
-  const handleReply = (msg: MessageWithProfile) => {
+  const handleReply = useCallback((msg: MessageWithProfile) => {
     const username = msg.profile?.username || "مجهول";
     setReplyTo({ username, text: msg.text });
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
