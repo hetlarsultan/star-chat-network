@@ -88,7 +88,10 @@
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    scroll-behavior: smooth;
+    /* No global smooth scroll: programmatic scrollTop assignments must be
+       instant to preserve position when prepending older messages and to
+       keep auto-scroll-to-bottom from animating mid-fetch. Smooth scroll
+       is opted into per-action via scrollTo({behavior:"smooth"}). */
   }
 
   button, a, [role="button"], input, textarea, select {
