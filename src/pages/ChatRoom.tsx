@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import TopToolbar from "@/components/TopToolbar";
 import BottomNav from "@/components/BottomNav";
-import ChatMessage from "@/components/ChatMessage";
+import ChatMessageRow from "@/components/ChatMessageRow";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
@@ -171,14 +171,14 @@ const ChatRoom = () => {
     await supabase.from("messages").insert(insertData);
   };
 
-  const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
+  const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
-  };
+  }, [user?.id]);
 
-  const handleReply = (msg: MessageWithProfile) => {
+  const handleReply = useCallback((msg: MessageWithProfile) => {
     const username = msg.profile?.username || "مجهول";
     setReplyTo({ username, text: msg.text });
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -188,27 +188,12 @@ const ChatRoom = () => {
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
-            <ChatMessage
+            <ChatMessageRow
               key={msg.id}
-              message={{
-                id: msg.id,
-                username: msg.profile?.username || "مجهول",
-                text: msg.text,
-                time: new Date(msg.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-                isOwn: msg.user_id === user?.id,
-                level: msg.profile?.level || 1,
-                country: msg.profile?.country || undefined,
-                gender: msg.profile?.gender || undefined,
-                avatarUrl: msg.profile?.avatar_url || null,
-                nameColor: (msg.profile as any)?.name_color || null,
-                fontColor: (msg.profile as any)?.font_color || null,
-                fontStyle: (msg.profile as any)?.font_style || null,
-                isGuest: msg.profile?.username?.startsWith("زائر_") || false,
-                replyToUsername: msg.reply_to_username || null,
-                replyToText: msg.reply_to_text || null,
-              }}
-              onAvatarClick={() => handleAvatarClick(msg.profile)}
-              onUsernameClick={() => handleReply(msg)}
+              msg={msg}
+              currentUserId={user?.id}
+              onAvatarClick={handleAvatarClick}
+              onUsernameClick={handleReply}
             />
           ))}
         </div>

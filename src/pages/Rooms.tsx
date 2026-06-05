@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import TopToolbar from "@/components/TopToolbar";
-import ChatMessage from "@/components/ChatMessage";
+import ChatMessageRow from "@/components/ChatMessageRow";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
@@ -150,9 +150,9 @@ const Rooms = () => {
     await supabase.from("messages").insert({ room_id: PUBLIC_ROOM_ID, user_id: user.id, text });
   };
 
-  const handleAvatarClick = (profile: Tables<"profiles"> | null | undefined) => {
+  const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
-  };
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -162,21 +162,11 @@ const Rooms = () => {
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
-            <ChatMessage key={msg.id}
-              message={{
-                id: msg.id,
-                username: msg.profile?.username || "مجهول",
-                text: msg.text,
-                time: new Date(msg.created_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-                isOwn: msg.user_id === user?.id,
-                level: msg.profile?.level || 1,
-                country: msg.profile?.country || undefined,
-                gender: msg.profile?.gender || undefined,
-                avatarUrl: msg.profile?.avatar_url || null,
-                nameColor: (msg.profile as any)?.name_color || null,
-                isGuest: msg.profile?.username?.startsWith("زائر_") || false,
-              }}
-              onAvatarClick={() => handleAvatarClick(msg.profile)}
+            <ChatMessageRow
+              key={msg.id}
+              msg={msg}
+              currentUserId={user?.id}
+              onAvatarClick={handleAvatarClick}
             />
           ))}
         </div>
