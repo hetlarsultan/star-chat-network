@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Reply, AlertCircle } from "lucide-react";
 
 const FONT_FAMILY_MAP: Record<string, string> = {
