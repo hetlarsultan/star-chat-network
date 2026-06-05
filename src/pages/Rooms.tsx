@@ -39,7 +39,10 @@ const Rooms = () => {
       const existing = new Set(prev.map(m => m.id));
       const fresh = incoming.filter(m => !existing.has(m.id));
       if (!fresh.length) return prev;
-      const merged = [...prev, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const merged = [...prev, ...fresh].sort((a, b) => {
+        const t = a.created_at.localeCompare(b.created_at);
+        return t !== 0 ? t : a.id.localeCompare(b.id);
+      });
       return merged;
     });
     const latest = incoming[incoming.length - 1]?.created_at;
@@ -119,6 +122,12 @@ const Rooms = () => {
     setUnreadCount(0);
   }, []);
 
+  const scrollToTop = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
   // Auto-scroll only when a NEW message arrives at the end AND user is near bottom.
   const lastIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -178,6 +187,8 @@ const Rooms = () => {
         onRetryOlder={retryOlder}
         unreadCount={unreadCount}
         onJumpToBottom={scrollToBottom}
+        onJumpToTop={scrollToTop}
+        showJumpToTop={isNearBottom}
       />
       <ChatInput onSend={handleSend} />
       <BottomNav />

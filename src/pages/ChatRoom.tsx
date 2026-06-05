@@ -53,7 +53,10 @@ const ChatRoom = () => {
       const existing = new Set(prev.map(m => m.id));
       const fresh = incoming.filter(m => !existing.has(m.id));
       if (!fresh.length) return prev;
-      return [...prev, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      return [...prev, ...fresh].sort((a, b) => {
+        const t = a.created_at.localeCompare(b.created_at);
+        return t !== 0 ? t : a.id.localeCompare(b.id);
+      });
     });
     const latest = incoming[incoming.length - 1]?.created_at;
     if (latest && (!lastSyncRef.current || latest > lastSyncRef.current)) lastSyncRef.current = latest;
@@ -117,12 +120,14 @@ const ChatRoom = () => {
     useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
 
   const isNearBottomRef = useRef(true);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
     isNearBottomRef.current = near;
+    setIsNearBottom(near);
     if (near) setUnreadCount(0);
     onScrollOlder(e);
   }, [onScrollOlder]);
@@ -132,6 +137,12 @@ const ChatRoom = () => {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
     setUnreadCount(0);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, []);
 
   const lastIdRef = useRef<string | null>(null);
@@ -209,6 +220,8 @@ const ChatRoom = () => {
         onRetryOlder={retryOlder}
         unreadCount={unreadCount}
         onJumpToBottom={scrollToBottom}
+        onJumpToTop={scrollToTop}
+        showJumpToTop={isNearBottom}
       />
 
       <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
