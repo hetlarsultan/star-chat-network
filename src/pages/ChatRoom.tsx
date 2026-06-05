@@ -120,12 +120,14 @@ const ChatRoom = () => {
     useOlderMessages(roomId, scrollRef, messages, setMessages, profilesCacheRef);
 
   const isNearBottomRef = useRef(true);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
     isNearBottomRef.current = near;
+    setIsNearBottom(near);
     if (near) setUnreadCount(0);
     onScrollOlder(e);
   }, [onScrollOlder]);
@@ -135,6 +137,12 @@ const ChatRoom = () => {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
     setUnreadCount(0);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, []);
 
   const lastIdRef = useRef<string | null>(null);
