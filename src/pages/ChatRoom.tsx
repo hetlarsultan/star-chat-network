@@ -220,6 +220,8 @@ const ChatRoom = () => {
         onRetryOlder={retryOlder}
         unreadCount={unreadCount}
         onJumpToBottom={scrollToBottom}
+        onJumpToTop={scrollToTop}
+        showJumpToTop={isNearBottom}
       />
 
       <ChatInput onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
