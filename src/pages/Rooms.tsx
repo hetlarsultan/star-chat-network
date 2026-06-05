@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import TopToolbar from "@/components/TopToolbar";
-import ChatMessage from "@/components/ChatMessage";
+import ChatMessageRow from "@/components/ChatMessageRow";
 import ChatInput from "@/components/ChatInput";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import UserProfileModal from "@/components/UserProfileModal";
