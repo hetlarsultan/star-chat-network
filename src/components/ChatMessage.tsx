@@ -129,4 +129,21 @@ const ChatMessage = ({ message, onAvatarClick, onUsernameClick }: Props) => {
   );
 };
 
-export default ChatMessage;
+export default memo(ChatMessage, (prev, next) => {
+  // Re-render only when message content/identity or own-flag changes.
+  const a = prev.message, b = next.message;
+  return (
+    a.id === b.id &&
+    a.text === b.text &&
+    a.time === b.time &&
+    a.isOwn === b.isOwn &&
+    a.username === b.username &&
+    a.avatarUrl === b.avatarUrl &&
+    a.level === b.level &&
+    a.nameColor === b.nameColor &&
+    a.fontColor === b.fontColor &&
+    a.fontStyle === b.fontStyle &&
+    a.replyToUsername === b.replyToUsername &&
+    a.replyToText === b.replyToText
+  );
+});
