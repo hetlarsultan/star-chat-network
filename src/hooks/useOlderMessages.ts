@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
@@ -45,6 +47,10 @@ export function useOlderMessages(
     setError(null);
 
     const oldest = messages[0].created_at;
+    // Anchor: keep the first currently-visible message in the same viewport position.
+    const anchorId = messages[0].id;
+    const anchorEl = container.querySelector<HTMLElement>(`[data-msg-id="${CSS.escape(anchorId)}"]`);
+    const prevAnchorTop = anchorEl ? anchorEl.getBoundingClientRect().top : null;
     const prevScrollHeight = container.scrollHeight;
     const prevScrollTop = container.scrollTop;
 
@@ -98,23 +104,36 @@ export function useOlderMessages(
       profile: profilesCacheRef.current[m.user_id] || null,
     }));
 
-    setMessages(prev => {
-      const existing = new Set(prev.map(m => m.id));
-      const fresh = withProfiles.filter(m => !existing.has(m.id));
-      return [...fresh, ...prev];
+    // Apply state synchronously so the DOM is updated before we restore scroll.
+    // This prevents the visible "jump" that happens when rAF fires before React commits.
+    flushSync(() => {
+      setMessages(prev => {
+        const existing = new Set(prev.map(m => m.id));
+        const fresh = withProfiles.filter(m => !existing.has(m.id));
+        return [...fresh, ...prev];
+      });
     });
     if (data.length < PAGE_SIZE) setHasMore(false);
 
-    // Preserve scroll position after DOM update (avoids jump on iOS/Android)
-    requestAnimationFrame(() => {
-      const c = scrollRef.current;
-      if (c) {
-        const newScrollHeight = c.scrollHeight;
-        c.scrollTop = newScrollHeight - prevScrollHeight + prevScrollTop;
+    // Restore scroll position: prefer anchor-element delta (most accurate on
+    // iOS/Android where heights can shift slightly), fall back to height delta.
+    const c = scrollRef.current;
+    if (c) {
+      if (prevAnchorTop !== null) {
+        const newAnchor = c.querySelector<HTMLElement>(`[data-msg-id="${CSS.escape(anchorId)}"]`);
+        if (newAnchor) {
+          const newAnchorTop = newAnchor.getBoundingClientRect().top;
+          c.scrollTop = c.scrollTop + (newAnchorTop - prevAnchorTop);
+        } else {
+          c.scrollTop = c.scrollHeight - prevScrollHeight + prevScrollTop;
+        }
+      } else {
+        c.scrollTop = c.scrollHeight - prevScrollHeight + prevScrollTop;
       }
-      setLoading(false);
-      lockRef.current = false;
-    });
+    }
+    setLoading(false);
+    lockRef.current = false;
+
   }, [roomId, messages, hasMore, scrollRef, setMessages, profilesCacheRef]);
 
   const onScroll = useCallback(
