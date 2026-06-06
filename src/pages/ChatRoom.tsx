@@ -168,14 +168,23 @@ const ChatRoom = () => {
   }, [messages, user?.id]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
-    if (!user || !roomId) return;
+    if (!user) {
+      toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" });
+      return;
+    }
+    if (!roomId) return;
     const insertData: any = { room_id: roomId, user_id: user.id, text };
     if (reply) {
       insertData.reply_to_username = reply.username;
       insertData.reply_to_text = reply.text;
     }
-    await supabase.from("messages").insert(insertData);
+    const { error } = await supabase.from("messages").insert(insertData);
+    if (error) {
+      console.error("Send message failed:", error);
+      toast({ title: "تعذر إرسال الرسالة", description: error.message, variant: "destructive" });
+    }
   };
+
 
   const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
