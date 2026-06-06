@@ -13,6 +13,8 @@ import { Tables } from "@/integrations/supabase/types";
 import { useOlderMessages } from "@/hooks/useOlderMessages";
 import { useRealtimeResync } from "@/hooks/useRealtimeResync";
 import ChatScrollHelpers from "@/components/ChatScrollHelpers";
+import { toast } from "@/hooks/use-toast";
+
 
 const INITIAL_PAGE = 30;
 
