@@ -202,16 +202,24 @@ const ChatRoom = () => {
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-48">
         <WelcomeBanner />
         <div className="mt-2">
-          {messages.map(msg => (
-            <ChatMessageRow
-              key={msg.id}
-              msg={msg}
-              currentUserId={user?.id}
-              onAvatarClick={handleAvatarClick}
-              onUsernameClick={handleReply}
-            />
-          ))}
+          {messages.length === 0 ? (
+            <div className="text-center text-muted-foreground text-sm font-cairo py-12 px-4">
+              لا توجد رسائل بعد. كن أول من يكتب! ✨
+              <p className="text-[10px] mt-2 opacity-60">الرسائل تُحذف تلقائياً بعد ٢٤ ساعة</p>
+            </div>
+          ) : (
+            messages.map(msg => (
+              <ChatMessageRow
+                key={msg.id}
+                msg={msg}
+                currentUserId={user?.id}
+                onAvatarClick={handleAvatarClick}
+                onUsernameClick={handleReply}
+              />
+            ))
+          )}
         </div>
+
       </div>
 
       <ChatScrollHelpers
