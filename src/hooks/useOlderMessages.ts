@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
