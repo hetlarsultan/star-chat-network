@@ -13,6 +13,8 @@ import { Tables } from "@/integrations/supabase/types";
 import { useOlderMessages } from "@/hooks/useOlderMessages";
 import { useRealtimeResync } from "@/hooks/useRealtimeResync";
 import ChatScrollHelpers from "@/components/ChatScrollHelpers";
+import { toast } from "@/hooks/use-toast";
+
 
 const INITIAL_PAGE = 30;
 
@@ -166,14 +168,23 @@ const ChatRoom = () => {
   }, [messages, user?.id]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {
-    if (!user || !roomId) return;
+    if (!user) {
+      toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" });
+      return;
+    }
+    if (!roomId) return;
     const insertData: any = { room_id: roomId, user_id: user.id, text };
     if (reply) {
       insertData.reply_to_username = reply.username;
       insertData.reply_to_text = reply.text;
     }
-    await supabase.from("messages").insert(insertData);
+    const { error } = await supabase.from("messages").insert(insertData);
+    if (error) {
+      console.error("Send message failed:", error);
+      toast({ title: "تعذر إرسال الرسالة", description: error.message, variant: "destructive" });
+    }
   };
+
 
   const handleAvatarClick = useCallback((profile: Tables<"profiles"> | null | undefined) => {
     if (profile && profile.user_id !== user?.id) setSelectedUser(profile);
@@ -191,16 +202,24 @@ const ChatRoom = () => {
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-48">
         <WelcomeBanner />
         <div className="mt-2">
-          {messages.map(msg => (
-            <ChatMessageRow
-              key={msg.id}
-              msg={msg}
-              currentUserId={user?.id}
-              onAvatarClick={handleAvatarClick}
-              onUsernameClick={handleReply}
-            />
-          ))}
+          {messages.length === 0 ? (
+            <div className="text-center text-muted-foreground text-sm font-cairo py-12 px-4">
+              لا توجد رسائل بعد. كن أول من يكتب! ✨
+              <p className="text-[10px] mt-2 opacity-60">الرسائل تُحذف تلقائياً بعد ٢٤ ساعة</p>
+            </div>
+          ) : (
+            messages.map(msg => (
+              <ChatMessageRow
+                key={msg.id}
+                msg={msg}
+                currentUserId={user?.id}
+                onAvatarClick={handleAvatarClick}
+                onUsernameClick={handleReply}
+              />
+            ))
+          )}
         </div>
+
       </div>
 
       <ChatScrollHelpers
