@@ -47,13 +47,16 @@ const ChatMessageRow = ({ msg, currentUserId, onAvatarClick, onUsernameClick }: 
   );
 
   return (
-    <ChatMessage
-      message={view}
-      onAvatarClick={() => onAvatarClick(msg.profile)}
-      onUsernameClick={onUsernameClick ? () => onUsernameClick(msg) : undefined}
-    />
+    <div data-msg-id={msg.id}>
+      <ChatMessage
+        message={view}
+        onAvatarClick={() => onAvatarClick(msg.profile)}
+        onUsernameClick={onUsernameClick ? () => onUsernameClick(msg) : undefined}
+      />
+    </div>
   );
 };
+
 
 export default memo(ChatMessageRow, (prev, next) => {
   return (
