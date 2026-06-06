@@ -184,7 +184,7 @@ const ChatRoom = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <TopToolbar roomName={roomName} />
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-36">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide pb-48">
         <WelcomeBanner />
         <div className="mt-2">
           {messages.map(msg => (
