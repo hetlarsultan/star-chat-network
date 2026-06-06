@@ -154,11 +154,15 @@ const ChatRoom = () => {
     const isInitial = lastIdRef.current === null;
     lastIdRef.current = lastId;
 
-    if (isInitial || isNearBottomRef.current || lastMsg.user_id === user?.id) {
+    // Only auto-scroll on initial load or when the user is already near the bottom.
+    // Incoming messages (including own) must NOT yank the viewport while the user
+    // is reading older messages — they can tap the "رسائل جديدة" pill to jump.
+    if (isInitial || isNearBottomRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     } else {
       setUnreadCount(c => c + 1);
     }
+
   }, [messages, user?.id]);
 
   const handleSend = async (text: string, reply?: { username: string; text: string }) => {

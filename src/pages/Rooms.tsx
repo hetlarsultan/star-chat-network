@@ -138,11 +138,13 @@ const Rooms = () => {
     const isInitial = lastIdRef.current === null;
     lastIdRef.current = lastId;
 
-    if (isInitial || isNearBottomRef.current || lastMsg.user_id === user?.id) {
+    // Only auto-scroll on initial load or when the user is already near the bottom.
+    if (isInitial || isNearBottomRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     } else {
       setUnreadCount(c => c + 1);
     }
+
   }, [messages, user?.id]);
 
   const handleSend = async (text: string) => {
