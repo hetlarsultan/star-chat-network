@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useRoomMessageNotifications } from "@/hooks/useRoomMessageNotifications";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import GuestRegister from "./pages/GuestRegister";
@@ -34,6 +35,7 @@ const queryClient = new QueryClient();
 
 const NotificationListener = () => {
   useNotificationSound();
+  useRoomMessageNotifications();
   return null;
 };
 
