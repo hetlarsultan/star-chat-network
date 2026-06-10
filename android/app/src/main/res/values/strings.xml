@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">star-chat-network</string>
+    <string name="title_activity_main">star-chat-network</string>
+    <string name="package_name">app.lovable.edbe4682e8d840499da4e9601dde8704</string>
+    <string name="custom_url_scheme">app.lovable.edbe4682e8d840499da4e9601dde8704</string>
+</resources>
