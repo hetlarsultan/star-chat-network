@@ -152,7 +152,7 @@ const PrivateChat = () => {
     setSendingImage(true);
 
     const ext = file.name.split('.').pop();
-    const path = `private/${user.id}/${Date.now()}.${ext}`;
+    const path = `${user.id}/private/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file);
     if (uploadError) {
