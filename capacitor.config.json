@@ -1,0 +1,12 @@
+{
+  "appId": "app.lovable.edbe4682e8d840499da4e9601dde8704",
+  "appName": "star-chat-network",
+  "webDir": "dist",
+  "server": {
+    "url": "https://edbe4682-e8d8-4049-9da4-e9601dde8704.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
